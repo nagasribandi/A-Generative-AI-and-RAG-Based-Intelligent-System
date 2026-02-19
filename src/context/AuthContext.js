@@ -70,15 +70,20 @@ export function AuthProvider({ children }) {
     if (exists) {
       throw new Error('An account with this email already exists');
     }
+    // SECURITY: Force role to 'student' — admin accounts cannot be created via signup
+    if (userData.role === 'admin') {
+      throw new Error('Admin accounts cannot be created through signup. Contact your institution.');
+    }
     const newUser = {
       id: 'user-' + Date.now(),
       name: userData.name,
       email: userData.email,
       password: userData.password,
-      role: userData.role || 'student',
+      role: 'student', // Always student — enforced server-side
       department: userData.department,
       studentId: userData.studentId,
       phone: userData.phone || '',
+      emailVerified: userData.emailVerified || false,
       createdAt: new Date().toISOString()
     };
     users.push(newUser);

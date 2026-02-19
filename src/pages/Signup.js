@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
-import { FiUser, FiMail, FiLock, FiEye, FiEyeOff, FiShield, FiPhone, FiBookOpen, FiHash } from 'react-icons/fi';
-import { motion } from 'framer-motion';
+import { FiUser, FiMail, FiLock, FiEye, FiEyeOff, FiShield, FiPhone, FiBookOpen, FiHash, FiAlertCircle, FiCheckCircle, FiInfo } from 'react-icons/fi';
+import { motion, AnimatePresence } from 'framer-motion';
+import { generateOTP, storeOTP, verifyOTP, sendOTPEmail } from '../services/emailService';
+import { validateRollNumber, validateStudentName, validateDepartmentMatch, checkDuplicateRoll, getValidDepartments, getDepartmentFromRoll } from '../services/studentValidation';
 import '../styles/auth.css';
 
 export default function Signup() {
@@ -12,7 +14,6 @@ export default function Signup() {
     email: '',
     password: '',
     confirmPassword: '',
-    role: 'student',
     department: '',
     studentId: '',
     phone: ''
@@ -20,26 +21,73 @@ export default function Signup() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(1); // 1: Account, 2: College Info, 3: OTP Verification
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [otpSent, setOtpSent] = useState(false); // eslint-disable-line no-unused-vars
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpTimer, setOtpTimer] = useState(0);
+  const [demoOtp, setDemoOtp] = useState(null);
+  const [rollValidation, setRollValidation] = useState(null);
+  const [nameValidation, setNameValidation] = useState(null);
+  const [deptMatch, setDeptMatch] = useState(null);
+  const otpRefs = useRef([]);
   const { signup } = useAuth();
   const navigate = useNavigate();
 
-  const departments = [
-    'Computer Science', 'Electrical Engineering', 'Mechanical Engineering',
-    'Civil Engineering', 'Electronics & Communication', 'Information Technology',
-    'Chemical Engineering', 'Biotechnology', 'Mathematics', 'Physics',
-    'Chemistry', 'Business Administration', 'Arts & Humanities', 'Other'
-  ];
+  const departments = getValidDepartments();
+
+  // OTP Timer countdown
+  useEffect(() => {
+    if (otpTimer > 0) {
+      const interval = setInterval(() => setOtpTimer(prev => prev - 1), 1000);
+      return () => clearInterval(interval);
+    }
+  }, [otpTimer]);
+
+  // Auto-set department from roll number
+  useEffect(() => {
+    if (formData.studentId.length >= 8) {
+      const dept = getDepartmentFromRoll(formData.studentId);
+      if (dept) {
+        setFormData(prev => ({ ...prev, department: dept }));
+        setDeptMatch({ valid: true, message: `Auto-detected: ${dept}` });
+      }
+    }
+  }, [formData.studentId]);
 
   const updateField = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     setErrors(prev => ({ ...prev, [field]: '' }));
+
+    // Live validation for roll number
+    if (field === 'studentId' && value.length > 0) {
+      const result = validateRollNumber(value);
+      setRollValidation(result);
+      if (result.valid && formData.department) {
+        setDeptMatch(validateDepartmentMatch(value, formData.department));
+      }
+    } else if (field === 'studentId') {
+      setRollValidation(null);
+    }
+
+    // Live validation for name
+    if (field === 'name' && value.length > 0) {
+      setNameValidation(validateStudentName(value));
+    } else if (field === 'name') {
+      setNameValidation(null);
+    }
+
+    // Department match check
+    if (field === 'department' && formData.studentId) {
+      setDeptMatch(validateDepartmentMatch(formData.studentId, value));
+    }
   };
 
+  // ===== STEP 1 VALIDATION =====
   const validateStep1 = () => {
     const errs = {};
-    if (!formData.name.trim()) errs.name = 'Full name is required';
-    else if (formData.name.trim().length < 2) errs.name = 'Name must be at least 2 characters';
+    const nameResult = validateStudentName(formData.name);
+    if (!nameResult.valid) errs.name = nameResult.message;
     if (!formData.email) errs.email = 'Email is required';
     else if (!/\S+@\S+\.\S+/.test(formData.email)) errs.email = 'Invalid email format';
     if (!formData.password) errs.password = 'Password is required';
@@ -50,26 +98,110 @@ export default function Signup() {
     return Object.keys(errs).length === 0;
   };
 
+  // ===== STEP 2 VALIDATION =====
   const validateStep2 = () => {
     const errs = {};
-    if (!formData.department) errs.department = 'Please select a department';
-    if (formData.role === 'student' && !formData.studentId.trim()) errs.studentId = 'Student ID is required';
+    const rollResult = validateRollNumber(formData.studentId);
+    if (!rollResult.valid) {
+      errs.studentId = rollResult.message;
+    } else {
+      const dupCheck = checkDuplicateRoll(formData.studentId);
+      if (dupCheck.duplicate) errs.studentId = dupCheck.message;
+    }
+    if (!formData.department) errs.department = 'Department is required';
+    else if (rollResult.valid) {
+      const matchResult = validateDepartmentMatch(formData.studentId, formData.department);
+      if (!matchResult.valid) errs.department = matchResult.message;
+    }
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
 
-  const handleNext = () => {
+  // ===== NAVIGATION =====
+  const handleNext1 = () => {
     if (validateStep1()) setStep(2);
   };
 
+  const handleNext2 = async () => {
+    if (!validateStep2()) return;
+    await handleSendOTP();
+    setStep(3);
+  };
+
+  // ===== OTP HANDLING =====
+  const handleSendOTP = async () => {
+    setOtpLoading(true);
+    const code = generateOTP();
+    storeOTP(formData.email, code);
+    const result = await sendOTPEmail(formData.email, formData.name, code);
+    if (result.success) {
+      setOtpSent(true);
+      setOtpTimer(120);
+      if (result.demo) {
+        setDemoOtp(result.otp);
+        toast.info(`Demo Mode: Your OTP is ${result.otp}`, { autoClose: 10000 });
+      } else {
+        toast.success('OTP sent to your email! Check your inbox.');
+        setDemoOtp(null);
+      }
+    } else {
+      toast.error('Failed to send OTP. Please try again.');
+    }
+    setOtpLoading(false);
+  };
+
+  const handleResendOTP = async () => {
+    if (otpTimer > 0) return;
+    setOtp(['', '', '', '', '', '']);
+    await handleSendOTP();
+  };
+
+  const handleOtpChange = (index, value) => {
+    if (value.length > 1) return;
+    const newOtp = [...otp];
+    newOtp[index] = value;
+    setOtp(newOtp);
+    if (value && index < 5) {
+      otpRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (index, e) => {
+    if (e.key === 'Backspace' && !otp[index] && index > 0) {
+      otpRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleOtpPaste = (e) => {
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (pasted.length === 6) {
+      setOtp(pasted.split(''));
+      otpRefs.current[5]?.focus();
+    }
+  };
+
+  // ===== FINAL SUBMIT =====
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validateStep2()) return;
-
+    const otpCode = otp.join('');
+    if (otpCode.length !== 6) {
+      toast.error('Please enter the complete 6-digit OTP');
+      return;
+    }
+    const otpResult = verifyOTP(formData.email, otpCode);
+    if (!otpResult.valid) {
+      toast.error(otpResult.message);
+      return;
+    }
     setLoading(true);
     try {
-      await signup(formData);
-      toast.success('Account created successfully! 🎉');
+      await signup({
+        ...formData,
+        role: 'student', // ALWAYS student — admin signup is restricted
+        studentId: formData.studentId.toUpperCase(),
+        emailVerified: true
+      });
+      toast.success('Account created successfully! Email verified ✅');
       navigate('/dashboard');
     } catch (err) {
       toast.error(err.message);
@@ -117,11 +249,15 @@ export default function Signup() {
           <div className="auth-left-content">
             <FiShield className="auth-logo-icon" />
             <h2>Join SmartCampus</h2>
-            <p>Create your account to report and track campus issues efficiently</p>
+            <p>Create your student account to report and track campus issues</p>
             <div className="auth-features-list">
               <div className="auth-feature-item">
                 <span className="feature-dot"></span>
-                Submit complaints instantly
+                OTP-verified email registration
+              </div>
+              <div className="auth-feature-item">
+                <span className="feature-dot"></span>
+                College ID validated enrollment
               </div>
               <div className="auth-feature-item">
                 <span className="feature-dot"></span>
@@ -131,9 +267,13 @@ export default function Signup() {
                 <span className="feature-dot"></span>
                 Track resolution progress
               </div>
-              <div className="auth-feature-item">
-                <span className="feature-dot"></span>
-                Get notified on updates
+            </div>
+
+            <div className="auth-notice">
+              <FiAlertCircle />
+              <div>
+                <strong>Students Only</strong>
+                <p>Only student accounts can be created here. Admin accounts are managed by the institution.</p>
               </div>
             </div>
           </div>
@@ -141,41 +281,57 @@ export default function Signup() {
 
         <div className="auth-right">
           <div className="auth-form-wrapper">
-            <h1>Create Account</h1>
-            <p className="auth-subtitle">Step {step} of 2 — {step === 1 ? 'Account Details' : 'Campus Information'}</p>
+            <h1>Create Student Account</h1>
+            <p className="auth-subtitle">Step {step} of 3 — {step === 1 ? 'Account Details' : step === 2 ? 'College Information' : 'Email Verification'}</p>
 
             {/* Progress Bar */}
             <div className="signup-progress">
               <div className="progress-bar">
-                <div className="progress-fill" style={{ width: step === 1 ? '50%' : '100%' }}></div>
+                <div className="progress-fill" style={{ width: `${(step / 3) * 100}%` }}></div>
               </div>
               <div className="progress-steps">
                 <span className={`progress-step ${step >= 1 ? 'active' : ''}`}>1</span>
                 <span className={`progress-step ${step >= 2 ? 'active' : ''}`}>2</span>
+                <span className={`progress-step ${step >= 3 ? 'active' : ''}`}>3</span>
               </div>
             </div>
 
             <form onSubmit={handleSubmit} className="auth-form" noValidate>
+              <AnimatePresence mode="wait">
+              {/* ===== STEP 1: Account Details ===== */}
               {step === 1 && (
                 <motion.div
+                  key="step1"
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
                   transition={{ duration: 0.3 }}
                 >
+                  {/* Name Field */}
                   <div className={`form-group ${errors.name ? 'error' : ''}`}>
-                    <label>Full Name</label>
+                    <label>Full Name <span className="label-hint">(as on College ID Card)</span></label>
                     <div className="input-wrapper">
                       <FiUser className="input-icon" />
                       <input
                         type="text"
-                        placeholder="Enter your full name"
+                        placeholder="e.g., Araveen Ponnusamy"
                         value={formData.name}
                         onChange={(e) => updateField('name', e.target.value)}
                       />
+                      {nameValidation && (
+                        <span className={`validation-indicator ${nameValidation.valid ? 'valid' : 'invalid'}`}>
+                          {nameValidation.valid ? <FiCheckCircle /> : <FiAlertCircle />}
+                        </span>
+                      )}
                     </div>
                     {errors.name && <span className="error-text">{errors.name}</span>}
+                    {!errors.name && nameValidation && !nameValidation.valid && (
+                      <span className="warning-text"><FiInfo size={12} /> {nameValidation.message}</span>
+                    )}
+                    <span className="field-hint">Enter your full name exactly as it appears on your college ID card</span>
                   </div>
 
+                  {/* Email Field */}
                   <div className={`form-group ${errors.email ? 'error' : ''}`}>
                     <label>Email Address</label>
                     <div className="input-wrapper">
@@ -188,8 +344,10 @@ export default function Signup() {
                       />
                     </div>
                     {errors.email && <span className="error-text">{errors.email}</span>}
+                    <span className="field-hint">An OTP will be sent to verify this email</span>
                   </div>
 
+                  {/* Password Field */}
                   <div className={`form-group ${errors.password ? 'error' : ''}`}>
                     <label>Password</label>
                     <div className="input-wrapper">
@@ -215,6 +373,7 @@ export default function Signup() {
                     {errors.password && <span className="error-text">{errors.password}</span>}
                   </div>
 
+                  {/* Confirm Password */}
                   <div className={`form-group ${errors.confirmPassword ? 'error' : ''}`}>
                     <label>Confirm Password</label>
                     <div className="input-wrapper">
@@ -229,38 +388,71 @@ export default function Signup() {
                     {errors.confirmPassword && <span className="error-text">{errors.confirmPassword}</span>}
                   </div>
 
-                  <button type="button" className="btn-auth-submit" onClick={handleNext}>
-                    Continue →
+                  <button type="button" className="btn-auth-submit" onClick={handleNext1}>
+                    Continue to College Info →
                   </button>
                 </motion.div>
               )}
 
+              {/* ===== STEP 2: College Information ===== */}
               {step === 2 && (
                 <motion.div
+                  key="step2"
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <div className="form-group">
-                    <label>I am a</label>
-                    <div className="role-selector">
-                      <button
-                        type="button"
-                        className={`role-btn ${formData.role === 'student' ? 'active' : ''}`}
-                        onClick={() => updateField('role', 'student')}
-                      >
-                        🎓 Student
-                      </button>
-                      <button
-                        type="button"
-                        className={`role-btn ${formData.role === 'admin' ? 'active' : ''}`}
-                        onClick={() => updateField('role', 'admin')}
-                      >
-                        🛡️ Admin
-                      </button>
+                  {/* Role Notice */}
+                  <div className="role-notice">
+                    <FiShield />
+                    <div>
+                      <strong>🎓 Student Registration Only</strong>
+                      <p>This signup is exclusively for students. Admin accounts cannot be created here and are managed by the institution.</p>
                     </div>
                   </div>
 
+                  {/* Roll Number */}
+                  <div className={`form-group ${errors.studentId ? 'error' : ''}`}>
+                    <label>Roll Number <span className="label-hint">(College ID)</span></label>
+                    <div className="input-wrapper">
+                      <FiHash className="input-icon" />
+                      <input
+                        type="text"
+                        placeholder="e.g., 23881A0501"
+                        value={formData.studentId}
+                        onChange={(e) => updateField('studentId', e.target.value.toUpperCase())}
+                        maxLength={10}
+                        style={{ textTransform: 'uppercase' }}
+                      />
+                      {rollValidation && (
+                        <span className={`validation-indicator ${rollValidation.valid ? 'valid' : 'invalid'}`}>
+                          {rollValidation.valid ? <FiCheckCircle /> : <FiAlertCircle />}
+                        </span>
+                      )}
+                    </div>
+                    {errors.studentId && <span className="error-text">{errors.studentId}</span>}
+                    {!errors.studentId && rollValidation && !rollValidation.valid && formData.studentId.length >= 3 && (
+                      <span className="warning-text"><FiInfo size={12} /> {rollValidation.message}</span>
+                    )}
+                    {rollValidation && rollValidation.valid && (
+                      <span className="success-text">
+                        <FiCheckCircle size={12} /> {rollValidation.parsed.department} — {rollValidation.parsed.branch} — Batch {rollValidation.parsed.admissionYear}
+                      </span>
+                    )}
+                    <div className="field-hint-box">
+                      <strong>Format: 23881A05XX</strong>
+                      <ul>
+                        <li><code>23</code> — Admission year</li>
+                        <li><code>881</code> — College code</li>
+                        <li><code>A</code> — Regular (B = Lateral)</li>
+                        <li><code>05</code> — Department code (e.g., 05 = CSE)</li>
+                        <li><code>XX</code> — Your roll number</li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  {/* Department (auto-filled from roll number) */}
                   <div className={`form-group ${errors.department ? 'error' : ''}`}>
                     <label>Department</label>
                     <div className="input-wrapper">
@@ -274,33 +466,23 @@ export default function Signup() {
                       </select>
                     </div>
                     {errors.department && <span className="error-text">{errors.department}</span>}
+                    {deptMatch && deptMatch.valid && formData.department && (
+                      <span className="success-text"><FiCheckCircle size={12} /> {deptMatch.message}</span>
+                    )}
+                    <span className="field-hint">Department is auto-detected from roll number.</span>
                   </div>
 
-                  {formData.role === 'student' && (
-                    <div className={`form-group ${errors.studentId ? 'error' : ''}`}>
-                      <label>Student ID / Roll Number</label>
-                      <div className="input-wrapper">
-                        <FiHash className="input-icon" />
-                        <input
-                          type="text"
-                          placeholder="e.g., CS2024001"
-                          value={formData.studentId}
-                          onChange={(e) => updateField('studentId', e.target.value)}
-                        />
-                      </div>
-                      {errors.studentId && <span className="error-text">{errors.studentId}</span>}
-                    </div>
-                  )}
-
+                  {/* Phone (Optional) */}
                   <div className="form-group">
-                    <label>Phone Number (Optional)</label>
+                    <label>Phone Number <span className="label-hint">(Optional)</span></label>
                     <div className="input-wrapper">
                       <FiPhone className="input-icon" />
                       <input
                         type="tel"
-                        placeholder="Enter phone number"
+                        placeholder="e.g., 9876543210"
                         value={formData.phone}
                         onChange={(e) => updateField('phone', e.target.value)}
+                        maxLength={10}
                       />
                     </div>
                   </div>
@@ -309,12 +491,79 @@ export default function Signup() {
                     <button type="button" className="btn-auth-back" onClick={() => setStep(1)}>
                       ← Back
                     </button>
-                    <button type="submit" className="btn-auth-submit" disabled={loading}>
-                      {loading ? <span className="btn-spinner"></span> : 'Create Account'}
+                    <button type="button" className="btn-auth-submit" onClick={handleNext2} disabled={otpLoading}>
+                      {otpLoading ? <span className="btn-spinner"></span> : 'Verify Email →'}
                     </button>
                   </div>
                 </motion.div>
               )}
+
+              {/* ===== STEP 3: OTP Verification ===== */}
+              {step === 3 && (
+                <motion.div
+                  key="step3"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <div className="otp-section">
+                    <div className="otp-icon">📧</div>
+                    <h3>Verify Your Email</h3>
+                    <p>We've sent a 6-digit OTP to</p>
+                    <p className="otp-email">{formData.email}</p>
+
+                    {/* Demo OTP display */}
+                    {demoOtp && (
+                      <div className="demo-otp-banner">
+                        <FiInfo />
+                        <div>
+                          <strong>Demo Mode</strong>
+                          <p>EmailJS not configured. Your OTP is: <code>{demoOtp}</code></p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* OTP Input Boxes */}
+                    <div className="otp-inputs" onPaste={handleOtpPaste}>
+                      {otp.map((digit, i) => (
+                        <input
+                          key={i}
+                          ref={el => { otpRefs.current[i] = el; }}
+                          type="text"
+                          maxLength={1}
+                          value={digit}
+                          onChange={(e) => handleOtpChange(i, e.target.value.replace(/\D/g, ''))}
+                          onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                          className="otp-input"
+                          autoFocus={i === 0}
+                        />
+                      ))}
+                    </div>
+
+                    {/* Timer & Resend */}
+                    <div className="otp-timer">
+                      {otpTimer > 0 ? (
+                        <span>Resend OTP in <strong>{Math.floor(otpTimer / 60)}:{String(otpTimer % 60).padStart(2, '0')}</strong></span>
+                      ) : (
+                        <button type="button" className="btn-resend" onClick={handleResendOTP} disabled={otpLoading}>
+                          {otpLoading ? 'Sending...' : 'Resend OTP'}
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="form-row">
+                      <button type="button" className="btn-auth-back" onClick={() => setStep(2)}>
+                        ← Back
+                      </button>
+                      <button type="submit" className="btn-auth-submit" disabled={loading || otp.join('').length !== 6}>
+                        {loading ? <span className="btn-spinner"></span> : '✅ Verify & Create Account'}
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+              </AnimatePresence>
             </form>
 
             <p className="auth-switch">

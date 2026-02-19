@@ -427,3 +427,290 @@
   .auth-left { display: none; }
   .auth-right { padding: 2rem 1.5rem; }
 }
+
+/* ===== NEW: Validation Indicators ===== */
+.validation-indicator {
+  display: flex;
+  align-items: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  padding-left: 6px;
+}
+.validation-indicator.valid { color: #22c55e; }
+.validation-indicator.invalid { color: #f59e0b; }
+
+.warning-text {
+  color: #f59e0b;
+  font-size: 0.78rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.success-text {
+  color: #22c55e;
+  font-size: 0.78rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.field-hint {
+  color: #94a3b8;
+  font-size: 0.75rem;
+  font-style: italic;
+}
+
+.label-hint {
+  color: #94a3b8;
+  font-weight: 400;
+  font-size: 0.8rem;
+}
+
+/* Roll Number Format Help Box */
+.field-hint-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-top: 4px;
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.field-hint-box strong {
+  display: block;
+  color: #475569;
+  margin-bottom: 4px;
+  font-size: 0.82rem;
+}
+
+.field-hint-box ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+}
+
+.field-hint-box ul li {
+  font-size: 0.74rem;
+}
+
+.field-hint-box code {
+  background: #eef2ff;
+  color: #6366f1;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+/* ===== NEW: Role Notice ===== */
+.role-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+  color: #92400e;
+}
+
+.role-notice svg {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: #d97706;
+}
+
+.role-notice strong {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 0.88rem;
+}
+
+.role-notice p {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+/* ===== NEW: Auth Notice (left panel) ===== */
+.auth-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-top: 1rem;
+  color: #fcd34d;
+  font-size: 0.82rem;
+}
+
+.auth-notice svg {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.auth-notice strong {
+  display: block;
+  margin-bottom: 2px;
+  color: #fde68a;
+}
+
+.auth-notice p {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #c7d2fe;
+  line-height: 1.4;
+}
+
+/* ===== NEW: OTP Section ===== */
+.otp-section {
+  text-align: center;
+  padding: 1rem 0;
+}
+
+.otp-icon {
+  font-size: 3rem;
+  margin-bottom: 0.5rem;
+}
+
+.otp-section h3 {
+  font-size: 1.3rem;
+  color: #1e293b;
+  margin-bottom: 0.3rem;
+}
+
+.otp-section > p {
+  color: #64748b;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.otp-email {
+  color: #6366f1 !important;
+  font-weight: 700;
+  font-size: 0.95rem !important;
+  margin-bottom: 1rem !important;
+}
+
+.otp-inputs {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin: 1.5rem 0;
+}
+
+.otp-input {
+  width: 48px;
+  height: 56px;
+  text-align: center;
+  font-size: 1.4rem;
+  font-weight: 700;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #1e293b;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.otp-input:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  background: #fff;
+}
+
+.otp-timer {
+  margin-bottom: 1.5rem;
+  font-size: 0.88rem;
+  color: #64748b;
+}
+
+.btn-resend {
+  background: none;
+  color: #6366f1;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  border: none;
+  text-decoration: underline;
+  padding: 4px 8px;
+}
+
+.btn-resend:hover {
+  color: #4f46e5;
+}
+
+.btn-resend:disabled {
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+/* Demo OTP Banner */
+.demo-otp-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin: 1rem 0;
+  text-align: left;
+  font-size: 0.85rem;
+  color: #4338ca;
+}
+
+.demo-otp-banner svg {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.demo-otp-banner strong {
+  display: block;
+  margin-bottom: 2px;
+}
+
+.demo-otp-banner p {
+  margin: 0;
+  font-size: 0.82rem;
+}
+
+.demo-otp-banner code {
+  background: #6366f1;
+  color: white;
+  padding: 2px 10px;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 3px;
+}
+
+/* ===== NEW: Urgent Email Notice (SubmitComplaint) ===== */
+.urgent-email-notice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  color: #92400e;
+  font-weight: 600;
+  margin-top: 0.5rem;
+}

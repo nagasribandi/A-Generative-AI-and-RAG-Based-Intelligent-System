@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
 import { classifyComplaint, predictPriority, generateRAGResponse, generateAISummary, saveComplaint } from '../services/aiEngine';
-import { FiSend, FiCpu, FiMapPin, FiFileText, FiAlertTriangle, FiCheckCircle, FiLoader } from 'react-icons/fi';
+import { sendUrgentComplaintEmail } from '../services/emailService';
+import { FiSend, FiCpu, FiMapPin, FiFileText, FiAlertTriangle, FiCheckCircle, FiLoader, FiMail } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import '../styles/submit.css';
 
@@ -123,6 +124,19 @@ export default function SubmitComplaint() {
     };
 
     saveComplaint(complaint);
+    
+    // Send urgent email to admins if complaint is High priority
+    if (complaint.priority === 'High') {
+      const emailResult = await sendUrgentComplaintEmail(complaint);
+      if (emailResult.success) {
+        if (emailResult.demo) {
+          toast.info('📧 Demo: Admin notification would be sent for this urgent complaint');
+        } else {
+          toast.info('📧 Admins have been notified via email about this urgent complaint');
+        }
+      }
+    }
+    
     setSubmitted(true);
     setSubmitting(false);
     toast.success('Complaint submitted successfully!');
@@ -143,6 +157,9 @@ export default function SubmitComplaint() {
           <p>Your complaint has been classified as <strong>{aiAnalysis.category}</strong> with 
           <strong> {aiAnalysis.priority.level}</strong> priority.</p>
           <p>The AI has generated an action plan and it has been routed to the appropriate department.</p>
+          {aiAnalysis.priority.level === 'High' && (
+            <p className="urgent-email-notice"><FiMail /> 📧 Admin team has been notified via email for immediate action</p>
+          )}
           <p className="redirect-text">Redirecting to complaints...</p>
         </motion.div>
       </div>
