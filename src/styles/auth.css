@@ -55,7 +55,8 @@
 }
 
 .signup-container {
-  grid-template-columns: 380px 480px;
+  grid-template-columns: 380px 500px;
+  max-height: none;
 }
 
 /* Left Panel */
@@ -117,12 +118,14 @@
 .auth-right {
   padding: 2.5rem 3rem;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   overflow-y: auto;
+  max-height: 95vh;
 }
 
 .auth-form-wrapper {
   width: 100%;
+  padding-bottom: 1rem;
 }
 
 .auth-form-wrapper h1 {
@@ -423,9 +426,10 @@
     grid-template-columns: 1fr;
     max-width: 480px;
     width: 100%;
+    max-height: none;
   }
   .auth-left { display: none; }
-  .auth-right { padding: 2rem 1.5rem; }
+  .auth-right { padding: 2rem 1.5rem; max-height: none; }
 }
 
 /* ===== NEW: Validation Indicators ===== */

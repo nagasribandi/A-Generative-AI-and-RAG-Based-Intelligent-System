@@ -14,20 +14,34 @@ const SESSION_KEY = 'smart_campus_session';
 
 function getUsers() {
   const stored = localStorage.getItem(USERS_KEY);
-  if (stored) return JSON.parse(stored);
-  // Default admin user
-  const defaults = [
-    {
-      id: 'admin-001',
-      name: 'Campus Admin',
-      email: 'admin@smartcampus.edu',
-      password: 'admin123',
-      role: 'admin',
-      department: 'Administration',
-      studentId: 'ADM-001',
-      createdAt: new Date().toISOString()
+  const defaultAdmin = {
+    id: 'admin-001',
+    name: 'Vardhaman Admin',
+    email: 'vardhaman@gmail.com',
+    password: 'helloworld123',
+    role: 'admin',
+    department: 'Administration',
+    studentId: 'ADM-001',
+    createdAt: new Date().toISOString()
+  };
+
+  if (stored) {
+    const users = JSON.parse(stored);
+    // Ensure admin account always exists and is up-to-date
+    const adminIdx = users.findIndex(u => u.id === 'admin-001');
+    if (adminIdx === -1) {
+      users.push(defaultAdmin);
+      localStorage.setItem(USERS_KEY, JSON.stringify(users));
+    } else {
+      // Update admin credentials if they changed
+      users[adminIdx] = { ...users[adminIdx], ...defaultAdmin };
+      localStorage.setItem(USERS_KEY, JSON.stringify(users));
     }
-  ];
+    return users;
+  }
+
+  // Default admin user
+  const defaults = [defaultAdmin];
   localStorage.setItem(USERS_KEY, JSON.stringify(defaults));
   return defaults;
 }

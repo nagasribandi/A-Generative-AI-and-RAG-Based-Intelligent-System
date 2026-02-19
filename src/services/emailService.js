@@ -2,12 +2,22 @@
 // Email Service using EmailJS
 // =====================================================
 // 
-// SETUP INSTRUCTIONS:
+// FOR VERCEL DEPLOYMENT:
+// Set these environment variables in Vercel Dashboard → Settings → Environment Variables:
+//   REACT_APP_EMAILJS_PUBLIC_KEY  = your EmailJS public key
+//   REACT_APP_EMAILJS_SERVICE_ID  = your EmailJS service ID
+//   REACT_APP_EMAILJS_TEMPLATE_OTP = your OTP template ID (default: template_otp)
+//   REACT_APP_EMAILJS_TEMPLATE_URGENT = your urgent template ID (default: template_urgent)
+//
+// FOR LOCAL DEVELOPMENT:
+// Create a .env file in project root with the same variables above.
+//
+// EMAILJS SETUP:
 // 1. Go to https://www.emailjs.com/ and create a free account
 // 2. Add an Email Service (Gmail recommended) → get SERVICE_ID
 // 3. Create TWO email templates:
 //
-//    Template 1: OTP Verification (template_otp)
+//    Template 1: OTP Verification
 //    Subject: "Smart Campus - Your OTP Verification Code"
 //    Body: 
 //      Hello {{to_name}},
@@ -16,10 +26,10 @@
 //      If you didn't request this, please ignore this email.
 //      - Smart Campus AI Team
 //
-//    Template 2: Urgent Complaint Alert (template_urgent)
+//    Template 2: Urgent Complaint Alert
 //    Subject: "🚨 URGENT: {{complaint_title}}"
 //    Body:
-//      Dear Admin,
+//      Dear {{to_name}},
 //      A HIGH PRIORITY complaint has been filed:
 //      ID: {{complaint_id}}
 //      Title: {{complaint_title}}
@@ -31,22 +41,20 @@
 //      - Smart Campus AI System
 //
 // 4. Get your PUBLIC_KEY from Account > API Keys
-// 5. Update the config below with your IDs
+// 5. Set environment variables in Vercel or .env
 // =====================================================
 
+// Read from environment variables (works on Vercel + local .env)
 const EMAILJS_CONFIG = {
-  PUBLIC_KEY: 'YOUR_PUBLIC_KEY_HERE',       // Replace with your EmailJS public key
-  SERVICE_ID: 'YOUR_SERVICE_ID_HERE',       // Replace with your EmailJS service ID
-  TEMPLATE_OTP: 'template_otp',             // OTP template ID
-  TEMPLATE_URGENT: 'template_urgent'        // Urgent complaint template ID
+  PUBLIC_KEY: process.env.REACT_APP_EMAILJS_PUBLIC_KEY || '',
+  SERVICE_ID: process.env.REACT_APP_EMAILJS_SERVICE_ID || '',
+  TEMPLATE_OTP: process.env.REACT_APP_EMAILJS_TEMPLATE_OTP || 'template_otp',
+  TEMPLATE_URGENT: process.env.REACT_APP_EMAILJS_TEMPLATE_URGENT || 'template_urgent'
 };
 
-// Check if EmailJS is configured
+// Check if EmailJS is configured via environment variables
 function isConfigured() {
-  return (
-    EMAILJS_CONFIG.PUBLIC_KEY !== 'YOUR_PUBLIC_KEY_HERE' &&
-    EMAILJS_CONFIG.SERVICE_ID !== 'YOUR_SERVICE_ID_HERE'
-  );
+  return !!(EMAILJS_CONFIG.PUBLIC_KEY && EMAILJS_CONFIG.SERVICE_ID);
 }
 
 // Generate a 6-digit OTP
@@ -112,7 +120,7 @@ export async function sendOTPEmail(toEmail, toName, otp) {
     // Dynamic import of EmailJS
     const emailjs = await import('@emailjs/browser');
 
-    const result = await emailjs.send( // eslint-disable-line no-unused-vars
+    await emailjs.send(
       EMAILJS_CONFIG.SERVICE_ID,
       EMAILJS_CONFIG.TEMPLATE_OTP,
       {

@@ -128,10 +128,11 @@ export default function Login() {
             </form>
 
             <div className="auth-divider">
-              <span>Demo Credentials</span>
+              <span>Admin Login</span>
             </div>
             <div className="demo-credentials">
-              <code>admin@smartcampus.edu / admin123</code>
+              <p style={{ fontSize: '0.78rem', color: '#64748b', marginBottom: '6px' }}>For authorized administrators only</p>
+              <code>vardhaman@gmail.com / helloworld123</code>
             </div>
 
             <p className="auth-switch">
