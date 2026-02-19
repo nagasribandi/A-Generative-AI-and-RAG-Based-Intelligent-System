@@ -314,7 +314,7 @@ export default function Signup() {
                       <FiUser className="input-icon" />
                       <input
                         type="text"
-                        placeholder="e.g., Araveen Ponnusamy"
+                        placeholder="e.g., john wick"
                         value={formData.name}
                         onChange={(e) => updateField('name', e.target.value)}
                       />
