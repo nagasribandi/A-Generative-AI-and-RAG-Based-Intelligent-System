@@ -1,0 +1,156 @@
+/* ===== PROFILE ===== */
+.profile-page {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.profile-card {
+  background: white;
+  border-radius: var(--radius);
+  padding: 2.5rem;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.profile-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: white;
+  flex-shrink: 0;
+}
+
+.profile-info h1 {
+  font-size: 1.4rem;
+  margin-bottom: 0.3rem;
+}
+
+.role-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.role-badge.admin {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.role-badge.student {
+  background: #eef2ff;
+  color: #6366f1;
+}
+
+.profile-details {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  margin-bottom: 2rem;
+}
+
+.detail-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.detail-row > svg {
+  color: var(--primary);
+  font-size: 1.2rem;
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+
+.detail-row label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+
+.detail-row span {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.detail-row input {
+  padding: 8px 12px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.95rem;
+  width: 100%;
+  max-width: 300px;
+  transition: all 0.2s;
+}
+
+.detail-row input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.profile-actions {
+  display: flex;
+  gap: 0.8rem;
+}
+
+.btn-edit {
+  padding: 11px 24px;
+  background: var(--primary);
+  color: white;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.btn-edit:hover {
+  background: var(--primary-dark);
+}
+
+.btn-save {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 11px 24px;
+  background: #22c55e;
+  color: white;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.btn-save:hover { background: #16a34a; }
+
+.btn-cancel {
+  padding: 11px 24px;
+  background: #f1f5f9;
+  color: var(--text-secondary);
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.btn-cancel:hover { background: #e2e8f0; }
