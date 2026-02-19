@@ -14,7 +14,6 @@ ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointE
 
 export default function Analytics() {
   const [complaints, setComplaints] = useState([]);
-  const [timeRange, setTimeRange] = useState('all');
 
   useEffect(() => {
     setComplaints(getComplaints());

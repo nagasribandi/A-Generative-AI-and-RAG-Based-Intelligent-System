@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { getComplaints, updateComplaint } from '../services/aiEngine';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
-import { FiSearch, FiFilter, FiEye, FiEdit2, FiChevronDown, FiRefreshCw } from 'react-icons/fi';
+import { FiSearch, FiFilter, FiEye, FiChevronDown, FiRefreshCw } from 'react-icons/fi';
 import { motion } from 'framer-motion';
 import '../styles/manage.css';
 
@@ -17,18 +17,18 @@ export default function ManageComplaints() {
   const [sortBy, setSortBy] = useState('newest');
   const [editingStatus, setEditingStatus] = useState(null);
 
-  useEffect(() => {
-    loadComplaints();
-  }, []);
-
-  const loadComplaints = () => {
+  const loadComplaints = useCallback(() => {
     const all = getComplaints();
     if (user.role === 'student') {
       setComplaints(all.filter(c => c.userId === user.id));
     } else {
       setComplaints(all);
     }
-  };
+  }, [user.role, user.id]);
+
+  useEffect(() => {
+    loadComplaints();
+  }, [loadComplaints]);
 
   const categories = [...new Set(complaints.map(c => c.category))];
 

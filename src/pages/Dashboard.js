@@ -17,7 +17,6 @@ ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointE
 export default function Dashboard() {
   const { user } = useAuth();
   const [complaints, setComplaints] = useState([]);
-  const [timeFilter, setTimeFilter] = useState('all');
 
   useEffect(() => {
     setComplaints(getComplaints());
