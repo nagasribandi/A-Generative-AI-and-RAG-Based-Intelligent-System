@@ -12,6 +12,7 @@ import ManageComplaints from './pages/ManageComplaints';
 import ComplaintDetail from './pages/ComplaintDetail';
 import Analytics from './pages/Analytics';
 import Profile from './pages/Profile';
+import Heatmap from './pages/Heatmap';
 import LandingPage from './pages/LandingPage';
 import Layout from './components/Layout';
 
@@ -59,6 +60,7 @@ function App() {
           <Route path="/complaints" element={<ProtectedRoute><ManageComplaints /></ProtectedRoute>} />
           <Route path="/complaint/:id" element={<ProtectedRoute><ComplaintDetail /></ProtectedRoute>} />
           <Route path="/analytics" element={<ProtectedRoute adminOnly><Analytics /></ProtectedRoute>} />
+          <Route path="/heatmap" element={<ProtectedRoute><Heatmap /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>

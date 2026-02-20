@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FiHome, FiPlus, FiList, FiBarChart2, FiUser, FiLogOut, FiMenu, FiX, FiShield, FiCpu } from 'react-icons/fi';
+import { FiHome, FiPlus, FiList, FiBarChart2, FiUser, FiLogOut, FiMenu, FiX, FiShield, FiCpu, FiMap } from 'react-icons/fi';
 import '../styles/layout.css';
 
 export default function Layout({ children }) {
@@ -19,6 +19,7 @@ export default function Layout({ children }) {
     { to: '/dashboard', icon: <FiHome />, label: 'Dashboard' },
     { to: '/submit-complaint', icon: <FiPlus />, label: 'Submit Complaint' },
     { to: '/complaints', icon: <FiList />, label: 'Complaints' },
+    { to: '/heatmap', icon: <FiMap />, label: 'Campus Heatmap' },
     ...(user?.role === 'admin' ? [{ to: '/analytics', icon: <FiBarChart2 />, label: 'Analytics' }] : []),
     { to: '/profile', icon: <FiUser />, label: 'Profile' }
   ];
