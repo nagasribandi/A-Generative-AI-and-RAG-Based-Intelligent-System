@@ -350,3 +350,45 @@
   .submit-layout { grid-template-columns: 1fr; }
   .ai-analysis-panel { position: static; }
 }
+
+/* AI Source Badge */
+.ai-source-badge-container {
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.ai-source-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.ai-source-badge.gemini {
+  background: linear-gradient(135deg, #4285f4, #ea4335, #fbbc04, #34a853);
+  color: #fff;
+  box-shadow: 0 2px 12px rgba(66, 133, 244, 0.35);
+  animation: geminiGlow 2s ease-in-out infinite alternate;
+}
+
+.ai-source-badge.hybrid {
+  background: linear-gradient(135deg, #6366f1, #4285f4);
+  color: #fff;
+  box-shadow: 0 2px 12px rgba(99, 102, 241, 0.3);
+}
+
+.ai-source-badge.rule-based {
+  background: #f0f0f5;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+}
+
+@keyframes geminiGlow {
+  0% { box-shadow: 0 2px 12px rgba(66, 133, 244, 0.35); }
+  100% { box-shadow: 0 4px 20px rgba(234, 67, 53, 0.35); }
+}

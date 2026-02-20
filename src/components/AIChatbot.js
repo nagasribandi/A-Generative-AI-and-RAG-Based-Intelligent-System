@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiMessageCircle, FiX, FiSend, FiCpu, FiMinimize2 } from 'react-icons/fi';
+import { FiMessageCircle, FiX, FiSend, FiCpu, FiMinimize2, FiZap } from 'react-icons/fi';
 import { classifyComplaint, predictPriority, getComplaints } from '../services/aiEngine';
+import { geminiChatResponse, isGeminiEnabled } from '../services/geminiService';
 import '../styles/chatbot.css';
 
 // Knowledge base for FAQ and campus info
@@ -95,7 +96,9 @@ export default function AIChatbot() {
     {
       id: 1,
       sender: 'bot',
-      text: 'Hello! 👋 I\'m the SmartCampus AI Assistant. How can I help you today?\n\nYou can ask me about complaints, campus zones, statistics, or describe an issue for instant AI analysis!',
+      text: isGeminiEnabled() 
+        ? 'Hello! 👋 I\'m the SmartCampus AI Assistant powered by **Google Gemini**. I can have intelligent conversations, analyze campus issues, and help you navigate the system!\n\nTry asking me anything about the campus!'
+        : 'Hello! 👋 I\'m the SmartCampus AI Assistant. How can I help you today?\n\nYou can ask me about complaints, campus zones, statistics, or describe an issue for instant AI analysis!',
       type: 'greeting',
       time: new Date()
     }
@@ -133,11 +136,65 @@ export default function AIChatbot() {
     setInput('');
     setIsTyping(true);
 
-    // Simulate thinking delay
-    await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 700));
-
     const complaints = getComplaints();
-    const response = generateResponse(userMsg.text, complaints);
+    
+    // First check for navigation commands (handle locally, no need for AI)
+    const lower = userMsg.text.toLowerCase();
+    const navPatterns = [
+      { pattern: /go.*to.*submit|take.*submit|open.*submit/i, path: '/submit-complaint', text: 'Taking you to the complaint form! 🚀' },
+      { pattern: /go.*to.*dashboard|open.*dashboard/i, path: '/dashboard', text: 'Opening Dashboard! 📊' },
+      { pattern: /go.*to.*heatmap|open.*map|show.*map/i, path: '/heatmap', text: 'Opening Campus Heatmap! 🗺️' },
+      { pattern: /go.*to.*leader|open.*leader|show.*leader/i, path: '/leaderboard', text: 'Opening Leaderboard! 🏆' },
+      { pattern: /go.*to.*complaint|show.*complaint|my.*complaint/i, path: '/complaints', text: 'Opening Complaints! 📋' }
+    ];
+
+    let response = null;
+    for (const nav of navPatterns) {
+      if (nav.pattern.test(lower)) {
+        response = { type: 'navigate', text: nav.text, path: nav.path };
+        break;
+      }
+    }
+
+    if (!response) {
+      // Try Gemini AI for intelligent response
+      if (isGeminiEnabled()) {
+        try {
+          await new Promise(resolve => setTimeout(resolve, 400));
+          
+          const stats = {
+            total: complaints.length,
+            open: complaints.filter(c => c.status === 'Open').length,
+            inProgress: complaints.filter(c => c.status === 'In Progress').length,
+            resolved: complaints.filter(c => c.status === 'Resolved').length
+          };
+
+          const geminiResult = await geminiChatResponse(userMsg.text, messages.slice(-8), stats);
+          response = { type: 'gemini', text: geminiResult.text };
+          
+          // If the response mentions analyzing a complaint, add analysis metadata
+          if (lower.length > 15 && /broken|not working|damage|leak|dirty|slow|problem|issue|faulty|crack|noise|smell|danger|fire|theft/i.test(lower)) {
+            const classification = classifyComplaint(lower);
+            const priority = predictPriority(lower);
+            response.analysis = { 
+              category: classification.category, 
+              confidence: classification.confidence, 
+              priority: priority.level 
+            };
+          }
+        } catch (err) {
+          console.warn('Gemini chatbot fallback:', err.message);
+          // Fall back to rule-based
+          response = generateResponse(userMsg.text, complaints);
+        }
+      } else {
+        // No Gemini — use rule-based engine
+        await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 700));
+        response = generateResponse(userMsg.text, complaints);
+      }
+    } else {
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
 
     const botMsg = {
       id: Date.now() + 1,
@@ -205,12 +262,12 @@ export default function AIChatbot() {
             <div className="chatbot-header">
               <div className="chatbot-header-info">
                 <div className="chatbot-avatar">
-                  <FiCpu />
+                  {isGeminiEnabled() ? <FiZap /> : <FiCpu />}
                 </div>
                 <div>
                   <span className="chatbot-name">AI Assistant</span>
                   <span className="chatbot-status">
-                    <span className="status-dot" /> Online
+                    <span className="status-dot" /> {isGeminiEnabled() ? 'Gemini AI' : 'Online'}
                   </span>
                 </div>
               </div>

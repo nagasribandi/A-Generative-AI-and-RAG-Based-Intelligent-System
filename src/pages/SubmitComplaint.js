@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
 import { classifyComplaint, predictPriority, generateRAGResponse, generateAISummary, saveComplaint } from '../services/aiEngine';
+import { geminiFullAnalysis, isGeminiEnabled } from '../services/geminiService';
 import { sendUrgentComplaintEmail } from '../services/emailService';
 import { awardPoints } from '../services/gamification';
-import { FiSend, FiCpu, FiMapPin, FiFileText, FiAlertTriangle, FiCheckCircle, FiLoader, FiMail } from 'react-icons/fi';
+import { FiSend, FiCpu, FiMapPin, FiFileText, FiAlertTriangle, FiCheckCircle, FiLoader, FiMail, FiZap } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import '../styles/submit.css';
 
@@ -80,22 +81,72 @@ export default function SubmitComplaint() {
     }
 
     setAnalyzing(true);
-    // Simulate AI processing time
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    const classification = classifyComplaint(formData.description);
-    const priority = predictPriority(formData.description);
-    const ragResponse = generateRAGResponse(classification.category);
-    const summary = generateAISummary(formData.description, classification.category, priority.level);
 
-    setAiAnalysis({
-      ...classification,
-      priority,
-      ragResponse,
-      summary
-    });
+    try {
+      if (isGeminiEnabled()) {
+        // Use real Gemini AI with rule-based fallback
+        toast.info('🤖 Running Gemini AI analysis...', { autoClose: 2000 });
+        
+        const result = await geminiFullAnalysis(formData.description, {
+          classify: classifyComplaint,
+          priority: predictPriority,
+          rag: generateRAGResponse,
+          summary: generateAISummary
+        });
+
+        setAiAnalysis({
+          category: result.classification.category,
+          confidence: result.classification.confidence,
+          priority: result.priority,
+          ragResponse: result.ragResponse,
+          summary: result.summary,
+          aiSource: result.source // 'gemini', 'hybrid', or 'rule-based'
+        });
+
+        if (result.source === 'gemini') {
+          toast.success('✨ Gemini AI analysis complete!');
+        } else if (result.source === 'hybrid') {
+          toast.info('🔄 Hybrid analysis: Gemini AI + rule-based engine');
+        } else {
+          toast.info('📊 Analysis complete using rule-based engine (Gemini fallback)');
+        }
+      } else {
+        // Gemini not configured — use rule-based engine
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        const classification = classifyComplaint(formData.description);
+        const priority = predictPriority(formData.description);
+        const ragResponse = generateRAGResponse(classification.category);
+        const summary = generateAISummary(formData.description, classification.category, priority.level);
+
+        setAiAnalysis({
+          ...classification,
+          priority,
+          ragResponse,
+          summary,
+          aiSource: 'rule-based'
+        });
+        toast.info('AI analysis complete! Review the results below.');
+      }
+    } catch (error) {
+      console.error('AI Analysis error:', error);
+      // Full fallback to rule-based
+      const classification = classifyComplaint(formData.description);
+      const priority = predictPriority(formData.description);
+      const ragResponse = generateRAGResponse(classification.category);
+      const summary = generateAISummary(formData.description, classification.category, priority.level);
+
+      setAiAnalysis({
+        ...classification,
+        priority,
+        ragResponse,
+        summary,
+        aiSource: 'rule-based'
+      });
+      toast.warning('Gemini AI unavailable. Used rule-based analysis.');
+    }
+    
     setAnalyzing(false);
-    toast.info('AI analysis complete! Review the results below.');
   };
 
   const handleSubmit = async (e) => {
@@ -288,9 +339,9 @@ export default function SubmitComplaint() {
               >
                 <div className="ai-pulse"></div>
                 <h3>🤖 AI Processing...</h3>
-                <p>Running GenAI classification model...</p>
-                <p>Querying RAG pipeline for SOPs...</p>
-                <p>Generating action plan...</p>
+                <p>{isGeminiEnabled() ? 'Querying Google Gemini AI model...' : 'Running GenAI classification model...'}</p>
+                <p>{isGeminiEnabled() ? 'Gemini analyzing category & priority...' : 'Querying RAG pipeline for SOPs...'}</p>
+                <p>{isGeminiEnabled() ? 'Generating AI-powered action plan...' : 'Generating action plan...'}</p>
               </motion.div>
             )}
 
@@ -301,6 +352,19 @@ export default function SubmitComplaint() {
                 animate={{ opacity: 1, y: 0 }}
               >
                 <h3>🤖 AI Analysis Results</h3>
+                
+                {/* AI Source Badge */}
+                <div className="ai-source-badge-container">
+                  {aiAnalysis.aiSource === 'gemini' && (
+                    <span className="ai-source-badge gemini"><FiZap /> Powered by Google Gemini AI</span>
+                  )}
+                  {aiAnalysis.aiSource === 'hybrid' && (
+                    <span className="ai-source-badge hybrid"><FiZap /> Gemini AI + Rule Engine</span>
+                  )}
+                  {aiAnalysis.aiSource === 'rule-based' && (
+                    <span className="ai-source-badge rule-based"><FiCpu /> Rule-Based AI Engine</span>
+                  )}
+                </div>
 
                 {/* Category */}
                 <div className="result-card">
