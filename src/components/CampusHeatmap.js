@@ -1,90 +1,99 @@
 import React, { useState, useMemo } from 'react';
 
-// Zone definitions: each zone has a unique id, label, SVG path, and matches location strings
+// =====================================================
+// Vardhaman College of Engineering - Actual Campus Layout
+// Based on satellite imagery of Shamshabad campus
+// =====================================================
+// Layout reference:
+//   Bottom: Nagarguda-Shamshabad Road (main road)
+//   Left:   Block 1 (large L-shaped academic - CSE Dept)
+//   Center: Block 2, Block 3 (academic buildings)
+//   Right:  Block 4, Block 5, Library
+//   Top-Right: Hostel area along Vardhaman Hostel Rd
+//   Top-Center: Sports Ground & Gym
+//   Bottom-Left: Parking
+// =====================================================
+
 const CAMPUS_ZONES = [
   {
-    id: 'main-building',
-    label: 'Main Building',
-    matchPatterns: ['Main Building'],
-    path: 'M 60 160 L 220 160 L 220 280 L 60 280 Z',
-    labelPos: { x: 140, y: 220 }
+    id: 'block-1',
+    label: 'Block 1',
+    matchPatterns: ['Block 1', 'Main Building', 'IT Block', 'Computer Lab'],
+    // Large L-shaped building on the left (CSE / main academic)
+    path: 'M 40 340 L 40 130 L 200 130 L 200 220 L 130 220 L 130 340 Z',
+    labelPos: { x: 105, y: 180 }
   },
   {
-    id: 'science-block',
-    label: 'Science Block',
-    matchPatterns: ['Science Block'],
-    path: 'M 240 160 L 380 160 L 380 280 L 240 280 Z',
-    labelPos: { x: 310, y: 220 }
+    id: 'block-2',
+    label: 'Block 2',
+    matchPatterns: ['Block 2', 'Science Block'],
+    // Building center-left area
+    path: 'M 215 150 L 340 150 L 340 260 L 215 260 Z',
+    labelPos: { x: 277, y: 205 }
   },
   {
-    id: 'it-block',
-    label: 'IT Block',
-    matchPatterns: ['IT Block'],
-    path: 'M 400 160 L 540 160 L 540 280 L 400 280 Z',
-    labelPos: { x: 470, y: 220 }
+    id: 'block-3',
+    label: 'Block 3',
+    matchPatterns: ['Block 3', 'Arts Block', 'Block C'],
+    // Building center area
+    path: 'M 215 275 L 340 275 L 340 380 L 215 380 Z',
+    labelPos: { x: 277, y: 328 }
   },
   {
-    id: 'arts-block',
-    label: 'Arts Block',
-    matchPatterns: ['Arts Block', 'Block C'],
-    path: 'M 560 160 L 700 160 L 700 280 L 560 280 Z',
-    labelPos: { x: 630, y: 220 }
+    id: 'block-4',
+    label: 'Block 4',
+    matchPatterns: ['Block 4'],
+    // Building right-center
+    path: 'M 360 150 L 490 150 L 490 260 L 360 260 Z',
+    labelPos: { x: 425, y: 205 }
+  },
+  {
+    id: 'block-5',
+    label: 'Block 5',
+    matchPatterns: ['Block 5'],
+    // Building right area (near Vardhaman College marker)
+    path: 'M 360 275 L 490 275 L 490 380 L 360 380 Z',
+    labelPos: { x: 425, y: 328 }
   },
   {
     id: 'library',
     label: 'Library',
     matchPatterns: ['Library'],
-    path: 'M 60 310 L 180 310 L 180 410 L 60 410 Z',
-    labelPos: { x: 120, y: 360 }
+    // Far right building
+    path: 'M 510 150 L 620 150 L 620 260 L 510 260 Z',
+    labelPos: { x: 565, y: 205 }
   },
   {
-    id: 'auditorium',
-    label: 'Auditorium',
-    matchPatterns: ['Auditorium'],
-    path: 'M 200 310 L 340 310 L 340 410 L 200 410 Z',
-    labelPos: { x: 270, y: 360 }
+    id: 'hostel',
+    label: 'Hostel',
+    matchPatterns: ['Hostel', 'Boys Hostel', 'Girls Hostel'],
+    // Top-right hostel area along Hostel Rd
+    path: 'M 500 40 L 670 40 L 670 120 L 500 120 Z',
+    labelPos: { x: 585, y: 80 }
   },
   {
-    id: 'cafeteria',
-    label: 'Cafeteria',
-    matchPatterns: ['Cafeteria', 'Canteen'],
-    path: 'M 360 310 L 480 310 L 480 410 L 360 410 Z',
-    labelPos: { x: 420, y: 360 }
+    id: 'sports-ground',
+    label: 'Sports Ground',
+    matchPatterns: ['Sports Complex', 'Sports Ground', 'Gym'],
+    // Top-center open area / sports ground
+    path: 'M 260 40 L 480 40 L 480 120 L 260 120 Z',
+    labelPos: { x: 370, y: 80 }
   },
   {
-    id: 'sports-complex',
-    label: 'Sports Complex',
-    matchPatterns: ['Sports Complex'],
-    path: 'M 500 310 L 700 310 L 700 410 L 500 410 Z',
-    labelPos: { x: 600, y: 360 }
-  },
-  {
-    id: 'boys-hostel',
-    label: 'Boys Hostel',
-    matchPatterns: ['Boys Hostel'],
-    path: 'M 60 440 L 220 440 L 220 550 L 60 550 Z',
-    labelPos: { x: 140, y: 495 }
-  },
-  {
-    id: 'girls-hostel',
-    label: 'Girls Hostel',
-    matchPatterns: ['Girls Hostel'],
-    path: 'M 240 440 L 400 440 L 400 550 L 240 550 Z',
-    labelPos: { x: 320, y: 495 }
-  },
-  {
-    id: 'parking-area',
-    label: 'Parking Area',
-    matchPatterns: ['Parking Area'],
-    path: 'M 420 440 L 560 440 L 560 550 L 420 550 Z',
-    labelPos: { x: 490, y: 495 }
+    id: 'parking',
+    label: 'Parking',
+    matchPatterns: ['Parking Area', 'Parking'],
+    // Bottom-left parking zone
+    path: 'M 40 400 L 130 400 L 130 480 L 40 480 Z',
+    labelPos: { x: 85, y: 440 }
   },
   {
     id: 'campus-grounds',
     label: 'Campus Grounds',
-    matchPatterns: ['Campus Grounds', 'Other'],
-    path: 'M 580 440 L 700 440 L 700 550 L 580 550 Z',
-    labelPos: { x: 640, y: 495 }
+    matchPatterns: ['Campus Grounds', 'Other', 'Cafeteria', 'Canteen', 'Auditorium'],
+    // Central open courtyard / garden area + rest of campus
+    path: 'M 145 275 L 200 275 L 200 380 L 145 380 Z',
+    labelPos: { x: 172, y: 328 }
   }
 ];
 
@@ -144,46 +153,83 @@ export default function CampusHeatmap({ complaints, selectedZone, onZoneSelect, 
   return (
     <div className="campus-heatmap-container">
       <svg
-        viewBox="0 0 760 600"
+        viewBox="0 0 720 530"
         className="campus-svg"
         xmlns="http://www.w3.org/2000/svg"
       >
-        {/* Background */}
-        <rect x="0" y="0" width="760" height="600" rx="16" fill="#1a1a2e" />
+        {/* Definitions */}
+        <defs>
+          <pattern id="grassPattern" patternUnits="userSpaceOnUse" width="20" height="20">
+            <rect width="20" height="20" fill="#1a2a1a" />
+            <circle cx="5" cy="5" r="1" fill="#243d24" opacity="0.5" />
+            <circle cx="15" cy="15" r="1" fill="#243d24" opacity="0.5" />
+          </pattern>
+          <filter id="shadow">
+            <feDropShadow dx="2" dy="2" stdDeviation="3" floodColor="#000" floodOpacity="0.4" />
+          </filter>
+        </defs>
 
-        {/* Title */}
-        <text x="380" y="40" textAnchor="middle" className="map-title" fill="#e0e0e0" fontSize="20" fontWeight="700">
-          🏫 Vardhaman Campus Map
+        {/* Background - campus grounds */}
+        <rect x="0" y="0" width="720" height="530" rx="16" fill="#0f1923" />
+        <rect x="15" y="15" width="690" height="500" rx="12" fill="url(#grassPattern)" opacity="0.6" />
+
+        {/* === ROADS === */}
+        {/* Main Road - Nagarguda-Shamshabad Rd (bottom) */}
+        <rect x="0" y="490" width="720" height="40" rx="0" fill="#2a2a3a" />
+        <line x1="0" y1="510" x2="720" y2="510" stroke="#444" strokeWidth="2" strokeDasharray="20,12" />
+        <text x="360" y="517" textAnchor="middle" fill="#666" fontSize="8" fontWeight="600" letterSpacing="2">
+          NAGARGUDA — SHAMSHABAD ROAD
         </text>
 
-        {/* Road lines */}
-        <line x1="30" y1="145" x2="730" y2="145" stroke="#2d2d4a" strokeWidth="3" strokeDasharray="10,5" />
-        <line x1="30" y1="295" x2="730" y2="295" stroke="#2d2d4a" strokeWidth="3" strokeDasharray="10,5" />
-        <line x1="30" y1="425" x2="730" y2="425" stroke="#2d2d4a" strokeWidth="3" strokeDasharray="10,5" />
-        <line x1="30" y1="565" x2="730" y2="565" stroke="#2d2d4a" strokeWidth="3" strokeDasharray="10,5" />
+        {/* Vardhaman Hostel Rd (top horizontal) */}
+        <rect x="230" y="125" width="490" height="18" rx="3" fill="#222235" />
+        <line x1="230" y1="134" x2="720" y2="134" stroke="#383850" strokeWidth="1" strokeDasharray="8,6" />
 
-        {/* Row labels */}
-        <text x="380" y="80" textAnchor="middle" fill="#8888aa" fontSize="11" fontWeight="600" letterSpacing="3">
-          — ACADEMIC ZONE —
-        </text>
-        <text x="270" y="130" textAnchor="middle" fill="#666688" fontSize="9">
-          Main Road
+        {/* Internal road - vertical connector left */}
+        <rect x="200" y="125" width="14" height="365" rx="3" fill="#222235" />
+
+        {/* Internal road - horizontal middle */}
+        <rect x="130" y="258" width="510" height="14" rx="3" fill="#222235" />
+
+        {/* Internal road - vertical right */}
+        <rect x="495" y="125" width="14" height="365" rx="3" fill="#222235" />
+
+        {/* Entrance road from bottom */}
+        <rect x="200" y="475" width="14" height="55" rx="3" fill="#222235" />
+        <text x="207" y="505" textAnchor="middle" fill="#8888aa" fontSize="9" fontWeight="700">
+          ↑
         </text>
 
-        {/* Zone entrance marker */}
-        <text x="380" y="580" textAnchor="middle" fill="#8888aa" fontSize="11" fontWeight="600" letterSpacing="3">
-          🚪 CAMPUS ENTRANCE
+        {/* === LABELS === */}
+        <text x="360" y="24" textAnchor="middle" fill="#e0e0e0" fontSize="16" fontWeight="800" letterSpacing="1">
+          🏫 VARDHAMAN COLLEGE OF ENGINEERING
         </text>
 
-        {/* Trees / decoration along roads */}
-        {[100, 250, 400, 550, 680].map((x, i) => (
-          <text key={`tree-${i}`} x={x} y="140" fontSize="12" textAnchor="middle" fill="#4a7">🌳</text>
+        {/* Road labels */}
+        <text x="680" y="138" textAnchor="end" fill="#555" fontSize="7" fontWeight="600">
+          HOSTEL ROAD →
+        </text>
+
+        {/* Entrance gate */}
+        <rect x="185" y="475" width="44" height="14" rx="4" fill="#333" stroke="#6c5ce7" strokeWidth="1" />
+        <text x="207" y="485" textAnchor="middle" fill="#a29bfe" fontSize="7" fontWeight="700">
+          GATE
+        </text>
+
+        {/* === TREES & GREENERY === */}
+        {/* Trees along roads */}
+        {[60, 160, 280, 400, 520, 640].map((x, i) => (
+          <text key={`t1-${i}`} x={x} y="490" fontSize="10" textAnchor="middle">🌳</text>
         ))}
-        {[100, 250, 400, 550, 680].map((x, i) => (
-          <text key={`tree2-${i}`} x={x} y="422" fontSize="12" textAnchor="middle" fill="#4a7">🌳</text>
+        {[250, 350, 450, 550].map((x, i) => (
+          <text key={`t2-${i}`} x={x} y="124" fontSize="8" textAnchor="middle">🌿</text>
         ))}
+        {/* Garden area in courtyard */}
+        <text x="172" y="310" textAnchor="middle" fontSize="8">🌿</text>
+        <text x="172" y="345" textAnchor="middle" fontSize="8">🌳</text>
+        <text x="172" y="370" textAnchor="middle" fontSize="8">🌿</text>
 
-        {/* Zone shapes */}
+        {/* === ZONE SHAPES (buildings) === */}
         {CAMPUS_ZONES.map(zone => {
           const count = zoneCounts[zone.id];
           const color = getHeatColor(count, maxCount);
@@ -201,57 +247,63 @@ export default function CampusHeatmap({ complaints, selectedZone, onZoneSelect, 
               onMouseLeave={() => setHoveredZone(null)}
               style={{ cursor: 'pointer' }}
             >
-              {/* Shadow */}
+              {/* Building shadow */}
               <path
                 d={zone.path}
-                fill="rgba(0,0,0,0.3)"
+                fill="rgba(0,0,0,0.35)"
                 transform="translate(3, 3)"
-                rx="8"
               />
-              {/* Zone body */}
+              {/* Building body */}
               <path
                 d={zone.path}
                 fill={color.fill}
                 stroke={isSelected ? '#fff' : color.stroke}
-                strokeWidth={isSelected ? 3 : 1.5}
-                opacity={isHovered ? 1 : 0.85}
-                rx="8"
+                strokeWidth={isSelected ? 2.5 : 1.2}
+                opacity={isHovered ? 1 : 0.82}
                 className="zone-path"
+              />
+              {/* Building roof lines for detail */}
+              <path
+                d={zone.path}
+                fill="none"
+                stroke="rgba(255,255,255,0.08)"
+                strokeWidth="0.5"
+                transform="translate(-2, -2) scale(1.01)"
               />
               {/* Zone label */}
               <text
                 x={zone.labelPos.x}
-                y={zone.labelPos.y - 10}
-                textAnchor="middle"
-                fill="#fff"
-                fontSize="12"
-                fontWeight="700"
-                className="zone-label"
-                style={{ textShadow: '0 1px 3px rgba(0,0,0,0.7)' }}
-              >
-                {zone.label}
-              </text>
-              {/* Count badge */}
-              <text
-                x={zone.labelPos.x}
-                y={zone.labelPos.y + 10}
+                y={zone.labelPos.y - 8}
                 textAnchor="middle"
                 fill="#fff"
                 fontSize="11"
+                fontWeight="800"
+                className="zone-label"
+                style={{ textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}
+              >
+                {zone.label}
+              </text>
+              {/* Count */}
+              <text
+                x={zone.labelPos.x}
+                y={zone.labelPos.y + 8}
+                textAnchor="middle"
+                fill="#fff"
+                fontSize="10"
                 fontWeight="600"
                 opacity="0.9"
               >
-                {count} complaint{count !== 1 ? 's' : ''}
+                {count} issue{count !== 1 ? 's' : ''}
               </text>
-              {/* Open issues warning */}
+              {/* Open warning */}
               {openCount > 0 && (
                 <text
                   x={zone.labelPos.x}
-                  y={zone.labelPos.y + 26}
+                  y={zone.labelPos.y + 22}
                   textAnchor="middle"
                   fill="#ffe082"
-                  fontSize="9"
-                  fontWeight="600"
+                  fontSize="8"
+                  fontWeight="700"
                 >
                   ⚠ {openCount} open
                 </text>
@@ -260,24 +312,31 @@ export default function CampusHeatmap({ complaints, selectedZone, onZoneSelect, 
           );
         })}
 
+        {/* === COMPASS === */}
+        <g transform="translate(670, 55)">
+          <circle cx="0" cy="0" r="18" fill="rgba(20,20,40,0.8)" stroke="#444" strokeWidth="1" />
+          <text x="0" y="-5" textAnchor="middle" fill="#e74c3c" fontSize="10" fontWeight="800">N</text>
+          <text x="0" y="12" textAnchor="middle" fill="#666" fontSize="7">↑</text>
+        </g>
+
         {/* Tooltip */}
         {hoveredZone && (
-          <g className="map-tooltip" transform={`translate(${tooltipPos.x}, ${tooltipPos.y})`}>
+          <g className="map-tooltip" transform={`translate(${Math.min(tooltipPos.x, 530)}, ${Math.min(tooltipPos.y, 470)})`}>
             <rect
               x="0"
-              y="-35"
-              width="180"
-              height="55"
+              y="-40"
+              width="190"
+              height="58"
               rx="8"
-              fill="rgba(20,20,40,0.95)"
-              stroke="#555"
+              fill="rgba(15,15,30,0.96)"
+              stroke="#6c5ce7"
               strokeWidth="1"
             />
-            <text x="10" y="-15" fill="#fff" fontSize="12" fontWeight="700">
-              {hoveredZone.label}
+            <text x="12" y="-20" fill="#fff" fontSize="12" fontWeight="700">
+              📍 {hoveredZone.label}
             </text>
-            <text x="10" y="5" fill="#aaa" fontSize="10">
-              {zoneCounts[hoveredZone.id]} total • {getZoneComplaints(hoveredZone).filter(c => c.status === 'Open').length} open • {getZoneComplaints(hoveredZone).filter(c => c.priority === 'High').length} high priority
+            <text x="12" y="0" fill="#aaa" fontSize="9">
+              {zoneCounts[hoveredZone.id]} total • {getZoneComplaints(hoveredZone).filter(c => c.status === 'Open').length} open • {getZoneComplaints(hoveredZone).filter(c => c.priority === 'High').length} urgent
             </text>
           </g>
         )}
@@ -285,10 +344,10 @@ export default function CampusHeatmap({ complaints, selectedZone, onZoneSelect, 
 
       {/* Legend */}
       <div className="heatmap-legend">
-        <span className="legend-title">Density:</span>
+        <span className="legend-title">Issue Density:</span>
         <div className="legend-item">
           <span className="legend-color" style={{ background: '#2ecc71' }}></span>
-          <span>None</span>
+          <span>Clear</span>
         </div>
         <div className="legend-item">
           <span className="legend-color" style={{ background: '#f1c40f' }}></span>
