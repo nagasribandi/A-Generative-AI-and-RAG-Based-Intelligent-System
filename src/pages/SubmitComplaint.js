@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
 import { classifyComplaint, predictPriority, generateRAGResponse, generateAISummary, saveComplaint } from '../services/aiEngine';
 import { sendUrgentComplaintEmail } from '../services/emailService';
+import { awardPoints } from '../services/gamification';
 import { FiSend, FiCpu, FiMapPin, FiFileText, FiAlertTriangle, FiCheckCircle, FiLoader, FiMail } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import '../styles/submit.css';
@@ -128,6 +129,12 @@ export default function SubmitComplaint() {
     };
 
     saveComplaint(complaint);
+
+    // Award gamification points for submitting a complaint
+    const pointsResult = awardPoints(user.id, user.name, 'SUBMIT_COMPLAINT', complaint.id);
+    if (complaint.priority === 'High') {
+      awardPoints(user.id, user.name, 'HIGH_PRIORITY_REPORT', complaint.id);
+    }
     
     // Send urgent email to admins if complaint is High priority
     if (complaint.priority === 'High') {
@@ -143,7 +150,7 @@ export default function SubmitComplaint() {
     
     setSubmitted(true);
     setSubmitting(false);
-    toast.success('Complaint submitted successfully!');
+    toast.success(`🎉 Complaint submitted! You earned +${pointsResult.pointsAwarded} points`);
     
     setTimeout(() => navigate('/complaints'), 2000);
   };

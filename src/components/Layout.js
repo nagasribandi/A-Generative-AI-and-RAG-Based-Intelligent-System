@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FiHome, FiPlus, FiList, FiBarChart2, FiUser, FiLogOut, FiMenu, FiX, FiShield, FiCpu, FiMap } from 'react-icons/fi';
+import { useTheme } from '../context/ThemeContext';
+import { FiHome, FiPlus, FiList, FiBarChart2, FiUser, FiLogOut, FiMenu, FiX, FiShield, FiCpu, FiMap, FiAward, FiSun, FiMoon } from 'react-icons/fi';
+import AIChatbot from './AIChatbot';
 import '../styles/layout.css';
 
 export default function Layout({ children }) {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -20,6 +23,7 @@ export default function Layout({ children }) {
     { to: '/submit-complaint', icon: <FiPlus />, label: 'Submit Complaint' },
     { to: '/complaints', icon: <FiList />, label: 'Complaints' },
     { to: '/heatmap', icon: <FiMap />, label: 'Campus Heatmap' },
+    { to: '/leaderboard', icon: <FiAward />, label: 'Leaderboard' },
     ...(user?.role === 'admin' ? [{ to: '/analytics', icon: <FiBarChart2 />, label: 'Analytics' }] : []),
     { to: '/profile', icon: <FiUser />, label: 'Profile' }
   ];
@@ -84,6 +88,9 @@ export default function Layout({ children }) {
             <FiMenu />
           </button>
           <div className="topbar-right">
+            <button className="theme-toggle-btn" onClick={toggleTheme} title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>
+              {theme === 'dark' ? <FiSun /> : <FiMoon />}
+            </button>
             <span className="topbar-role-badge">
               {user?.role === 'admin' ? '🛡️ Admin' : '🎓 Student'}
             </span>
@@ -93,6 +100,9 @@ export default function Layout({ children }) {
           {children}
         </div>
       </main>
+
+      {/* AI Chatbot */}
+      <AIChatbot />
 
       {/* Mobile overlay */}
       {mobileOpen && <div className="sidebar-overlay" onClick={() => setMobileOpen(false)}></div>}

@@ -20,6 +20,57 @@
   --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06);
   --shadow-lg: 0 10px 25px rgba(0,0,0,0.1), 0 6px 10px rgba(0,0,0,0.08);
   --transition: all 0.2s ease;
+
+  /* Theme - shared vars (default = light) */
+  --card-bg: #ffffff;
+  --card-border: #e2e8f0;
+  --row-hover: rgba(99, 102, 241, 0.04);
+  --progress-track: #e2e8f0;
+  --badge-bg: #f8fafc;
+  --badge-earned-bg: rgba(99, 102, 241, 0.06);
+  --sidebar-bg: #0f172a;
+  --topbar-bg: #ffffff;
+  --topbar-border: #e2e8f0;
+
+  /* Chatbot theme vars */
+  --chatbot-bg: #ffffff;
+  --chatbot-border: #e2e8f0;
+  --chatbot-bot-bubble: #f1f5f9;
+  --chatbot-bot-text: #1e293b;
+  --chatbot-quick-bg: #f8fafc;
+  --chatbot-input-bg: #f8fafc;
+}
+
+/* ===== DARK THEME ===== */
+[data-theme="dark"] {
+  --bg-page: #0a0a1a;
+  --bg-card: #141428;
+  --bg-dark: #0f172a;
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-light: #64748b;
+  --border: #1e293b;
+
+  --card-bg: #141428;
+  --card-border: rgba(99, 102, 241, 0.12);
+  --row-hover: rgba(99, 102, 241, 0.08);
+  --progress-track: #1e293b;
+  --badge-bg: rgba(255, 255, 255, 0.03);
+  --badge-earned-bg: rgba(99, 102, 241, 0.1);
+  --sidebar-bg: #0a0a18;
+  --topbar-bg: #101025;
+  --topbar-border: rgba(255, 255, 255, 0.06);
+
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.3);
+  --shadow-lg: 0 10px 25px rgba(0,0,0,0.4);
+
+  --chatbot-bg: #141428;
+  --chatbot-border: rgba(99, 102, 241, 0.15);
+  --chatbot-bot-bubble: rgba(255, 255, 255, 0.06);
+  --chatbot-bot-text: #e2e8f0;
+  --chatbot-quick-bg: rgba(255, 255, 255, 0.04);
+  --chatbot-input-bg: #0a0a1a;
 }
 
 * {
@@ -34,6 +85,7 @@ body {
   color: var(--text-primary);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
 a {

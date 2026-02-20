@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { getComplaints, updateComplaint } from '../services/aiEngine';
 import { useAuth } from '../context/AuthContext';
+import { awardPoints } from '../services/gamification';
 import { toast } from 'react-toastify';
 import { FiSearch, FiFilter, FiEye, FiChevronDown, FiRefreshCw } from 'react-icons/fi';
 import { motion } from 'framer-motion';
@@ -65,8 +66,13 @@ export default function ManageComplaints() {
   }, [complaints, search, categoryFilter, priorityFilter, statusFilter, sortBy]);
 
   const handleStatusChange = (id, newStatus) => {
+    const complaint = complaints.find(c => c.id === id);
     const updated = updateComplaint(id, { status: newStatus, updatedAt: new Date().toISOString() });
     if (updated) {
+      // Award points to the complaint author when resolved
+      if (newStatus === 'Resolved' && complaint) {
+        awardPoints(complaint.userId, complaint.userName, 'COMPLAINT_RESOLVED', id);
+      }
       loadComplaints();
       toast.success(`Status updated to ${newStatus}`);
     }

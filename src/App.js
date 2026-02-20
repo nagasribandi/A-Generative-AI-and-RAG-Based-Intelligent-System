@@ -4,6 +4,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
@@ -13,6 +14,7 @@ import ComplaintDetail from './pages/ComplaintDetail';
 import Analytics from './pages/Analytics';
 import Profile from './pages/Profile';
 import Heatmap from './pages/Heatmap';
+import Leaderboard from './pages/Leaderboard';
 import LandingPage from './pages/LandingPage';
 import Layout from './components/Layout';
 
@@ -43,6 +45,7 @@ function PublicRoute({ children }) {
 
 function App() {
   return (
+    <ThemeProvider>
     <AuthProvider>
       <Router>
         <ToastContainer
@@ -61,11 +64,13 @@ function App() {
           <Route path="/complaint/:id" element={<ProtectedRoute><ComplaintDetail /></ProtectedRoute>} />
           <Route path="/analytics" element={<ProtectedRoute adminOnly><Analytics /></ProtectedRoute>} />
           <Route path="/heatmap" element={<ProtectedRoute><Heatmap /></ProtectedRoute>} />
+          <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </Router>
     </AuthProvider>
+    </ThemeProvider>
   );
 }
 
