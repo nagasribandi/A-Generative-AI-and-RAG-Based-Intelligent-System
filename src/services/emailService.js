@@ -52,11 +52,6 @@ const EMAILJS_CONFIG = {
   TEMPLATE_URGENT: process.env.REACT_APP_EMAILJS_TEMPLATE_URGENT || 'template_urgent'
 };
 
-// Check if EmailJS is configured via environment variables
-function isConfigured() {
-  return !!(EMAILJS_CONFIG.PUBLIC_KEY && EMAILJS_CONFIG.SERVICE_ID);
-}
-
 // Generate a 6-digit OTP
 export function generateOTP() {
   return String(Math.floor(100000 + Math.random() * 900000));
@@ -110,14 +105,7 @@ export function verifyOTP(email, inputOtp) {
 
 // Send OTP email via EmailJS
 export async function sendOTPEmail(toEmail, toName, otp) {
-  if (!isConfigured()) {
-    // Demo mode — show OTP in console and simulate success
-    console.log(`📧 [DEMO MODE] OTP for ${toEmail}: ${otp}`);
-    return { success: true, demo: true, otp };
-  }
-
   try {
-    // Dynamic import of EmailJS
     const emailjs = await import('@emailjs/browser');
 
     await emailjs.send(
@@ -134,32 +122,17 @@ export async function sendOTPEmail(toEmail, toName, otp) {
     return { success: true, demo: false };
   } catch (error) {
     console.error('EmailJS OTP Error:', error);
-    // Fallback to demo mode
-    console.log(`📧 [FALLBACK] OTP for ${toEmail}: ${otp}`);
-    return { success: true, demo: true, otp };
+    return { success: false, demo: false, error: error.message };
   }
 }
 
 // Send urgent complaint email to admins
 export async function sendUrgentComplaintEmail(complaint) {
-  // Get admin users from localStorage
   const users = JSON.parse(localStorage.getItem('smart_campus_users') || '[]');
   const admins = users.filter(u => u.role === 'admin');
 
   if (admins.length === 0) {
-    console.log('No admin users found for urgent notification');
     return { success: false, message: 'No admins to notify' };
-  }
-
-  if (!isConfigured()) {
-    // Demo mode
-    console.log(`🚨 [DEMO MODE] Urgent complaint alert would be sent to admins:`);
-    admins.forEach(admin => {
-      console.log(`   → ${admin.name} (${admin.email})`);
-    });
-    console.log(`   Complaint: ${complaint.title}`);
-    console.log(`   Category: ${complaint.category} | Priority: ${complaint.priority}`);
-    return { success: true, demo: true, notifiedAdmins: admins.map(a => a.email) };
   }
 
   try {

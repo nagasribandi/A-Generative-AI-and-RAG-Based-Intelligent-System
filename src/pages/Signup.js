@@ -26,7 +26,6 @@ export default function Signup() {
   const [otpSent, setOtpSent] = useState(false); // eslint-disable-line no-unused-vars
   const [otpLoading, setOtpLoading] = useState(false);
   const [otpTimer, setOtpTimer] = useState(0);
-  const [demoOtp, setDemoOtp] = useState(null);
   const [rollValidation, setRollValidation] = useState(null);
   const [nameValidation, setNameValidation] = useState(null);
   const [deptMatch, setDeptMatch] = useState(null);
@@ -137,13 +136,7 @@ export default function Signup() {
     if (result.success) {
       setOtpSent(true);
       setOtpTimer(120);
-      if (result.demo) {
-        setDemoOtp(result.otp);
-        toast.info(`Demo Mode: Your OTP is ${result.otp}`, { autoClose: 10000 });
-      } else {
-        toast.success('OTP sent to your email! Check your inbox.');
-        setDemoOtp(null);
-      }
+      toast.success('OTP sent to your email! Check your inbox.');
     } else {
       toast.error('Failed to send OTP. Please try again.');
     }
@@ -512,17 +505,6 @@ export default function Signup() {
                     <h3>Verify Your Email</h3>
                     <p>We've sent a 6-digit OTP to</p>
                     <p className="otp-email">{formData.email}</p>
-
-                    {/* Demo OTP display */}
-                    {demoOtp && (
-                      <div className="demo-otp-banner">
-                        <FiInfo />
-                        <div>
-                          <strong>Demo Mode</strong>
-                          <p>EmailJS not configured. Your OTP is: <code>{demoOtp}</code></p>
-                        </div>
-                      </div>
-                    )}
 
                     {/* OTP Input Boxes */}
                     <div className="otp-inputs" onPaste={handleOtpPaste}>
