@@ -44,11 +44,11 @@
 // 5. Set environment variables in Vercel or .env
 // =====================================================
 
-// Read from environment variables (works on Vercel + local .env)
+// Read from environment variables, with hardcoded fallbacks
 const EMAILJS_CONFIG = {
-  PUBLIC_KEY: process.env.REACT_APP_EMAILJS_PUBLIC_KEY || '',
-  SERVICE_ID: process.env.REACT_APP_EMAILJS_SERVICE_ID || '',
-  TEMPLATE_OTP: process.env.REACT_APP_EMAILJS_TEMPLATE_OTP || 'template_otp',
+  PUBLIC_KEY: process.env.REACT_APP_EMAILJS_PUBLIC_KEY || '_NYIsUgyId5xv6-z_',
+  SERVICE_ID: process.env.REACT_APP_EMAILJS_SERVICE_ID || 'service_bjbum8z',
+  TEMPLATE_OTP: process.env.REACT_APP_EMAILJS_TEMPLATE_OTP || 'template_c9trkaj',
   TEMPLATE_URGENT: process.env.REACT_APP_EMAILJS_TEMPLATE_URGENT || 'template_urgent'
 };
 
@@ -119,10 +119,10 @@ export async function sendOTPEmail(toEmail, toName, otp) {
       EMAILJS_CONFIG.PUBLIC_KEY
     );
 
-    return { success: true, demo: false };
+    return { success: true };
   } catch (error) {
     console.error('EmailJS OTP Error:', error);
-    return { success: false, demo: false, error: error.message };
+    return { success: false, error: error?.text || error?.message || 'Unknown error' };
   }
 }
 

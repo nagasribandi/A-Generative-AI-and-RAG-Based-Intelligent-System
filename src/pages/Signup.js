@@ -138,7 +138,7 @@ export default function Signup() {
       setOtpTimer(120);
       toast.success('OTP sent to your email! Check your inbox.');
     } else {
-      toast.error('Failed to send OTP. Please try again.');
+      toast.error(`Failed to send OTP: ${result.error || 'Unknown error'}`);
     }
     setOtpLoading(false);
   };
