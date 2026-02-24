@@ -12,9 +12,9 @@ const ADMIN_KEY = process.env.ADMIN_API_KEY || 'dev-admin-key';
 
 // ── Email config ─────────────────────────────────────
 // Set these env vars, or edit the defaults below with your Gmail + App Password
-const SMTP_USER = process.env.SMTP_USER || 'araveenipipavath@gmail.com';
-const SMTP_PASS = process.env.SMTP_PASS || '';  // paste your 16-char Google App Password here
-const SMTP_FROM = process.env.SMTP_FROM || '"Smart Campus Detection" <araveenipipavath@gmail.com>';
+const SMTP_USER = process.env.SMTP_USER || 'araveenpipavath@gmail.com';
+const SMTP_PASS = process.env.SMTP_PASS || 'yhvqijbuvvdibyqn';
+const SMTP_FROM = process.env.SMTP_FROM || '"Smart Campus Detection" <araveenpipavath@gmail.com>';
 
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
