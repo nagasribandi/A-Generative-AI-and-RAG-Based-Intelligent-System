@@ -162,6 +162,7 @@ export async function sendSignupDecisionEmail(toEmail, toName, approved, adminNa
      <p>Hello ${toName},</p>
      <p>Your signup request for the Smart Campus system has been <b>${status}</b> by ${adminName || 'Site Admin'}.</p>
      <p>${extra}</p>
+     ${approved ? '<p><a href="https://smartcampusdetection.vercel.app/login" style="display:inline-block;padding:12px 24px;background:#4f46e5;color:#fff;text-decoration:none;border-radius:8px;font-weight:bold;">Login Now</a></p>' : ''}
      <br><p>— Smart Campus AI System</p>`
   );
 }
