@@ -1,15 +1,18 @@
 // =====================================================
-// Email Service — ALL emails via backend (Nodemailer)
+// Email Service — Hybrid approach
 // =====================================================
-// No EmailJS needed. Everything goes through:
-//   Express backend → Nodemailer → Gmail SMTP
-//
-// Backend URL:  REACT_APP_API_URL  (e.g. http://localhost:4000)
-// Admin key:    REACT_APP_ADMIN_KEY (must match server's ADMIN_API_KEY)
+// OTP emails: EmailJS (works client-side from Vercel, no backend needed)
+// Admin/approval/urgent emails: Backend Nodemailer (when backend is deployed)
+//                               or silently skipped if backend unreachable
 // =====================================================
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
 const ADMIN_KEY = process.env.REACT_APP_ADMIN_KEY || 'dev-admin-key';
+
+// EmailJS config for OTP
+const EMAILJS_SERVICE_ID = process.env.REACT_APP_EMAILJS_SERVICE_ID || 'service_dxowgj4';
+const EMAILJS_PUBLIC_KEY = process.env.REACT_APP_EMAILJS_PUBLIC_KEY || '_NYIsUgyId5xv6-z_';
+const EMAILJS_TEMPLATE_OTP = process.env.REACT_APP_EMAILJS_TEMPLATE_OTP || 'template_c9trkaj';
 
 // ── Helper: send email via backend ───────────────────
 async function sendViaBackend(to, subject, body) {
@@ -77,19 +80,25 @@ export function verifyOTP(email, inputOtp) {
   return { valid: true, message: 'OTP verified successfully!' };
 }
 
-// Send OTP email via backend (Nodemailer)
+// Send OTP email via EmailJS (works client-side from Vercel)
 export async function sendOTPEmail(toEmail, toName, otp) {
-  return await sendViaBackend(
-    toEmail,
-    'Smart Campus - Your OTP Verification Code',
-    `<h2>OTP Verification</h2>
-     <p>Hello ${toName},</p>
-     <p>Your OTP verification code is:</p>
-     <h1 style="letter-spacing:8px; color:#4f46e5; text-align:center;">${otp}</h1>
-     <p>This code expires in <b>5 minutes</b>.</p>
-     <p>If you didn't request this, please ignore this email.</p>
-     <br><p>— Smart Campus AI Team</p>`
-  );
+  try {
+    const emailjs = await import('@emailjs/browser');
+    await emailjs.send(
+      EMAILJS_SERVICE_ID,
+      EMAILJS_TEMPLATE_OTP,
+      {
+        to_email: toEmail,
+        to_name: toName,
+        otp_code: otp
+      },
+      EMAILJS_PUBLIC_KEY
+    );
+    return { success: true };
+  } catch (error) {
+    console.error('EmailJS OTP Error:', error);
+    return { success: false, error: error?.text || error?.message || 'Unknown error' };
+  }
 }
 
 // Send urgent complaint email to admins via backend
