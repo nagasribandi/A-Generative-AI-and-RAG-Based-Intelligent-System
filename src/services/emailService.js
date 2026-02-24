@@ -125,29 +125,24 @@ export function getAdminEmails() {
   return users.filter(u => u.role === 'admin').map(a => ({ name: a.name, email: a.email }));
 }
 
-// Send notification to all admins when a new user signs up
+// Send notification to admin when a new user signs up
 export async function sendNewUserNotification(newUser) {
-  const users = JSON.parse(localStorage.getItem('smart_campus_users') || '[]');
-  const admins = users.filter(u => u.role === 'admin');
-  if (admins.length === 0) return { success: false, message: 'No admins configured' };
+  // Always notify the site admin directly (localStorage may not have admin on new user's browser)
+  const ADMIN_EMAIL = 'araveenpipavath@gmail.com';
 
-  const results = [];
-  for (const admin of admins) {
-    const result = await sendViaBackend(
-      admin.email,
-      `New signup request: ${newUser.name}`,
-      `<h2>New User Signup — Awaiting Approval</h2>
-       <p><b>Name:</b> ${newUser.name}</p>
-       <p><b>Email:</b> ${newUser.email}</p>
-       <p><b>Department:</b> ${newUser.department || 'N/A'}</p>
-       <p><b>Student ID:</b> ${newUser.studentId || 'N/A'}</p>
-       <p><b>Signed up:</b> ${newUser.createdAt}</p>
-       <br><p>Please log into the Admin Panel to approve or reject this request.</p>
-       <p>— Smart Campus AI System</p>`
-    );
-    results.push({ email: admin.email, sent: result.success !== false });
-  }
-  return { success: true, results };
+  const result = await sendViaBackend(
+    ADMIN_EMAIL,
+    `New signup request: ${newUser.name}`,
+    `<h2>New User Signup — Awaiting Approval</h2>
+     <p><b>Name:</b> ${newUser.name}</p>
+     <p><b>Email:</b> ${newUser.email}</p>
+     <p><b>Department:</b> ${newUser.department || 'N/A'}</p>
+     <p><b>Student ID:</b> ${newUser.studentId || 'N/A'}</p>
+     <p><b>Signed up:</b> ${newUser.createdAt}</p>
+     <br><p>Please log into the <a href="https://smartcampusdetection.vercel.app/admin">Admin Panel</a> to approve or reject this request.</p>
+     <p>— Smart Campus AI System</p>`
+  );
+  return { success: result.success !== false, results: [{ email: ADMIN_EMAIL, sent: result.success !== false }] };
 }
 
 // Send approval/rejection email to a user after admin decision
