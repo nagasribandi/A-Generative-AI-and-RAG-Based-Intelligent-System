@@ -16,6 +16,7 @@ import {
   fetchAudit as apiFetchAudit,
   getUsersCsvUrl
 } from '../services/backendClient';
+import { sendSignupDecisionEmail } from '../services/emailService';
 import '../styles/admin.css';
 
 const PAGE_SIZE = 8;
@@ -79,6 +80,11 @@ export default function AdminPanel() {
     try {
       if (backendEnabled) { await approveUserRemote(id, user.name); }
       else { await approveUser(id); writeLocalAudit({ type: 'approve', userId: id, admin: user.name }); }
+      // Send approval email
+      const target = [...pending, ...users].find(u => u.id === id);
+      if (target) {
+        sendSignupDecisionEmail(target.email, target.name, true, user.name).catch(() => {});
+      }
       toast.success('User approved & notified');
       refresh();
     } catch (err) { toast.error(err.message); }
@@ -89,6 +95,11 @@ export default function AdminPanel() {
     try {
       if (backendEnabled) { await rejectUserRemote(id, user.name, reason || ''); }
       else { await rejectUser(id, reason || ''); writeLocalAudit({ type: 'reject', userId: id, admin: user.name, reason }); }
+      // Send rejection email
+      const target = [...pending, ...users].find(u => u.id === id);
+      if (target) {
+        sendSignupDecisionEmail(target.email, target.name, false, user.name, reason || '').catch(() => {});
+      }
       toast.success('User rejected & notified');
       refresh();
     } catch (err) { toast.error(err.message); }
