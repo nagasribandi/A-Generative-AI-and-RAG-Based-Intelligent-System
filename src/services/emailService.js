@@ -52,6 +52,10 @@ const EMAILJS_CONFIG = {
   TEMPLATE_URGENT: process.env.REACT_APP_EMAILJS_TEMPLATE_URGENT || 'template_urgent'
 };
 
+// Additional templates for admin notifications and approval emails
+EMAILJS_CONFIG.TEMPLATE_NEWUSER = process.env.REACT_APP_EMAILJS_TEMPLATE_NEWUSER || 'template_newuser';
+EMAILJS_CONFIG.TEMPLATE_APPROVAL = process.env.REACT_APP_EMAILJS_TEMPLATE_APPROVAL || 'template_approval';
+
 // Generate a 6-digit OTP
 export function generateOTP() {
   return String(Math.floor(100000 + Math.random() * 900000));
@@ -175,4 +179,64 @@ export async function sendUrgentComplaintEmail(complaint) {
 export function getAdminEmails() {
   const users = JSON.parse(localStorage.getItem('smart_campus_users') || '[]');
   return users.filter(u => u.role === 'admin').map(a => ({ name: a.name, email: a.email }));
+}
+
+// Send notification to all admins when a new user signs up (pending approval)
+export async function sendNewUserNotification(newUser) {
+  const users = JSON.parse(localStorage.getItem('smart_campus_users') || '[]');
+  const admins = users.filter(u => u.role === 'admin');
+  if (admins.length === 0) return { success: false, message: 'No admins configured' };
+
+  try {
+    const emailjs = await import('@emailjs/browser');
+    const results = [];
+    for (const admin of admins) {
+      try {
+        await emailjs.send(
+          EMAILJS_CONFIG.SERVICE_ID,
+          EMAILJS_CONFIG.TEMPLATE_NEWUSER,
+          {
+            to_email: admin.email,
+            to_name: admin.name,
+            user_name: newUser.name,
+            user_email: newUser.email,
+            user_department: newUser.department || '',
+            user_studentId: newUser.studentId || '',
+            user_createdAt: newUser.createdAt
+          },
+          EMAILJS_CONFIG.PUBLIC_KEY
+        );
+        results.push({ email: admin.email, sent: true });
+      } catch (err) {
+        results.push({ email: admin.email, sent: false, error: err.message });
+      }
+    }
+    return { success: true, results };
+  } catch (error) {
+    console.error('EmailJS NewUser Notification Error:', error);
+    return { success: false, message: error.message };
+  }
+}
+
+// Send approval/rejection email to a user after admin decision
+export async function sendSignupDecisionEmail(toEmail, toName, approved, adminName, reason = '') {
+  try {
+    const emailjs = await import('@emailjs/browser');
+    await emailjs.send(
+      EMAILJS_CONFIG.SERVICE_ID,
+      EMAILJS_CONFIG.TEMPLATE_APPROVAL,
+      {
+        to_email: toEmail,
+        to_name: toName,
+        approved: approved ? 'approved' : 'rejected',
+        admin_name: adminName || 'Site Admin',
+        reason
+      },
+      EMAILJS_CONFIG.PUBLIC_KEY
+    );
+    return { success: true };
+  } catch (error) {
+    console.error('EmailJS Signup Decision Error:', error);
+    return { success: false, message: error.message };
+  }
 }

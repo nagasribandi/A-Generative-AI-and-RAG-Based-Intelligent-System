@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { sendSignupDecisionEmail } from '../services/emailService';
 
 const AuthContext = createContext(null);
 
@@ -73,6 +74,13 @@ export function AuthProvider({ children }) {
     if (!found) {
       throw new Error('Invalid email or password');
     }
+    // Block login for students whose account is not yet approved by admin
+    if (found.role !== 'admin' && !found.approved) {
+      if (found.rejected) {
+        throw new Error('Your signup request was rejected by the admin. Please contact the institution.');
+      }
+      throw new Error('Your account is pending admin approval. You will receive an email once approved.');
+    }
     setUser(found);
     localStorage.setItem(SESSION_KEY, JSON.stringify({ id: found.id }));
     return found;
@@ -98,13 +106,98 @@ export function AuthProvider({ children }) {
       studentId: userData.studentId,
       phone: userData.phone || '',
       emailVerified: userData.emailVerified || false,
+      approved: false, // admin must approve before login
+      rejected: false,
       createdAt: new Date().toISOString()
     };
     users.push(newUser);
     saveUsers(users);
-    setUser(newUser);
-    localStorage.setItem(SESSION_KEY, JSON.stringify({ id: newUser.id }));
+    // Do NOT auto-login. Admin must approve account.
     return newUser;
+  };
+
+  // Admin functions
+  const getPendingUsers = () => {
+    const users = getUsers();
+    return users.filter(u => !u.approved && !u.rejected && u.role !== 'admin');
+  };
+
+  const approveUser = async (userId) => {
+    if (!user || user.role !== 'admin') throw new Error('Only admins can approve users');
+    const users = getUsers();
+    const idx = users.findIndex(u => u.id === userId);
+    if (idx === -1) throw new Error('User not found');
+    users[idx].approved = true;
+    users[idx].rejected = false;
+    saveUsers(users);
+    // Notify the user via email
+    try {
+      await sendSignupDecisionEmail(users[idx].email, users[idx].name, true, user.name);
+    } catch (err) {
+      console.error('Failed to send approval email:', err);
+    }
+    return users[idx];
+  };
+
+  const rejectUser = async (userId, reason = '') => {
+    if (!user || user.role !== 'admin') throw new Error('Only admins can reject users');
+    const users = getUsers();
+    const idx = users.findIndex(u => u.id === userId);
+    if (idx === -1) throw new Error('User not found');
+    users[idx].approved = false;
+    users[idx].rejected = true;
+    saveUsers(users);
+    try {
+      await sendSignupDecisionEmail(users[idx].email, users[idx].name, false, user.name, reason);
+    } catch (err) {
+      console.error('Failed to send rejection email:', err);
+    }
+    return users[idx];
+  };
+
+  const adminCreateUser = (userData) => {
+    if (!user || user.role !== 'admin') throw new Error('Only admins can create users');
+    const users = getUsers();
+    const exists = users.find(u => u.email === userData.email);
+    if (exists) throw new Error('User with this email already exists');
+    const newUser = {
+      id: 'user-' + Date.now(),
+      name: userData.name,
+      email: userData.email,
+      password: userData.password || 'changeme123',
+      role: userData.role || 'student',
+      department: userData.department || '',
+      studentId: userData.studentId || '',
+      phone: userData.phone || '',
+      emailVerified: true,
+      approved: true,
+      rejected: false,
+      createdAt: new Date().toISOString()
+    };
+    users.push(newUser);
+    saveUsers(users);
+    return newUser;
+  };
+
+  const adminDeleteUser = (userId) => {
+    if (!user || user.role !== 'admin') throw new Error('Only admins can delete users');
+    if (userId === 'admin-001') throw new Error('Default admin cannot be deleted');
+    const users = getUsers();
+    const idx = users.findIndex(u => u.id === userId);
+    if (idx === -1) throw new Error('User not found');
+    users.splice(idx, 1);
+    saveUsers(users);
+    return true;
+  };
+
+  const adminChangePassword = (userId, newPassword) => {
+    if (!user || user.role !== 'admin') throw new Error('Only admins can change passwords');
+    const users = getUsers();
+    const idx = users.findIndex(u => u.id === userId);
+    if (idx === -1) throw new Error('User not found');
+    users[idx].password = newPassword;
+    saveUsers(users);
+    return users[idx];
   };
 
   const logout = () => {
@@ -123,7 +216,21 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout, updateProfile }}>
+    <AuthContext.Provider value={{
+      user,
+      loading,
+      login,
+      signup,
+      logout,
+      updateProfile,
+      // Admin utilities
+      getPendingUsers,
+      approveUser,
+      rejectUser,
+      adminCreateUser,
+      adminDeleteUser,
+      adminChangePassword
+    }}>
       {children}
     </AuthContext.Provider>
   );
