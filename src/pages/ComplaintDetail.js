@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getComplaints, updateComplaint } from '../services/aiEngine';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
+import { penalizeUser } from '../services/gamification';
 import { FiArrowLeft, FiCpu, FiFileText, FiMapPin, FiUser, FiCalendar, FiAlertTriangle, FiCheckCircle, FiClock } from 'react-icons/fi';
 import { motion } from 'framer-motion';
 import '../styles/detail.css';
@@ -81,6 +82,16 @@ export default function ComplaintDetail() {
               {s}
             </button>
           ))}
+              <button className="status-btn fake-btn" onClick={async () => {
+                if (!window.confirm('Mark this complaint as Fake information? This will penalize the reporter.')) return;
+                const updated = updateComplaint(complaint.id, { status: 'Fake', updatedAt: new Date().toISOString() });
+                if (updated) {
+                  setComplaint(updated);
+                  // Penalize reporter heavily
+                  const penalty = penalizeUser(complaint.userId, complaint.userName, 100, 'Marked as Fake by admin');
+                  toast.warn(`${complaint.userName} penalized ${penalty.deducted} points for fake information`);
+                }
+              }}>Mark as Fake</button>
         </div>
       )}
 
@@ -114,6 +125,12 @@ export default function ComplaintDetail() {
               <div className="info-card">
                 <h4>Description</h4>
                 <p>{complaint.description}</p>
+                {complaint.imageData && (
+                  <div style={{ marginTop: 12 }}>
+                    <h5>Attached Image</h5>
+                    <img src={complaint.imageData} alt={complaint.imageName || 'attachment'} style={{ maxWidth: '100%', borderRadius: 8, marginTop: 8 }} />
+                  </div>
+                )}
               </div>
               <div className="info-card">
                 <h4>Details</h4>

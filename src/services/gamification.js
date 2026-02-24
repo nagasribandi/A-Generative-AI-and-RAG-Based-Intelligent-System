@@ -262,3 +262,45 @@ export function seedSampleLeaderboard() {
 }
 
 export { BADGE_DEFINITIONS, RANK_TIERS, POINT_VALUES };
+
+// Penalize a user by deducting points for fake/malicious reports
+export function penalizeUser(userId, userName, points = 50, reason = 'Fake information reported') {
+  const data = getPointsData();
+  const entry = getUserPointsEntry(userId, userName);
+
+  const deduction = Math.min(points, entry.totalPoints);
+  entry.totalPoints = Math.max(0, entry.totalPoints - deduction);
+  entry.lastActive = new Date().toISOString();
+
+  entry.history.unshift({
+    action: `Penalty: ${reason}`,
+    points: -deduction,
+    details: reason,
+    timestamp: new Date().toISOString()
+  });
+
+  // Trim history
+  if (entry.history.length > 50) entry.history = entry.history.slice(0, 50);
+
+  // Remove badges that no longer meet requirements
+  const removedBadges = [];
+  entry.badges = entry.badges.filter(bid => {
+    const badge = BADGE_DEFINITIONS.find(b => b.id === bid);
+    if (!badge) return false;
+    let stillEarned = true;
+    switch (badge.type) {
+      case 'complaints': stillEarned = entry.complaintsSubmitted >= badge.requirement; break;
+      case 'points': stillEarned = entry.totalPoints >= badge.requirement; break;
+      case 'resolved': stillEarned = entry.complaintsResolved >= badge.requirement; break;
+      case 'urgent': stillEarned = entry.urgentReports >= badge.requirement; break;
+      default: break;
+    }
+    if (!stillEarned) removedBadges.push(badge);
+    return stillEarned;
+  });
+
+  data[userId] = entry;
+  savePointsData(data);
+
+  return { deducted: deduction, totalPoints: entry.totalPoints, removedBadges };
+}

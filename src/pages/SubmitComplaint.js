@@ -23,6 +23,8 @@ export default function SubmitComplaint() {
   const [analyzing, setAnalyzing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
 
   const locations = [
     'Block 1 - Ground Floor',
@@ -61,6 +63,24 @@ export default function SubmitComplaint() {
     if (field === 'description' && aiAnalysis) {
       setAiAnalysis(null);
     }
+  };
+
+  // Handle optional image upload and convert to base64
+  const handleFileChange = (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    // limit ~3.5MB to be safe
+    const maxBytes = 3.5 * 1024 * 1024;
+    if (f.size > maxBytes) {
+      toast.error('Image too large. Please upload an image smaller than 3.5 MB');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImagePreview(reader.result);
+      setImageFile({ name: f.name, data: reader.result });
+    };
+    reader.readAsDataURL(f);
   };
 
   const validate = () => {
@@ -175,11 +195,13 @@ export default function SubmitComplaint() {
       status: 'Open',
       aiSummary: aiAnalysis.summary,
       ragResponse: aiAnalysis.ragResponse,
+      imageName: imageFile?.name || null,
+      imageData: imageFile?.data || null,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
 
-    saveComplaint(complaint);
+  saveComplaint(complaint);
 
     // Award gamification points for submitting a complaint
     const pointsResult = awardPoints(user.id, user.name, 'SUBMIT_COMPLAINT', complaint.id);
@@ -201,7 +223,7 @@ export default function SubmitComplaint() {
     
     setSubmitted(true);
     setSubmitting(false);
-    toast.success(`🎉 Complaint submitted! You earned +${pointsResult.pointsAwarded} points`);
+  toast.success(`🎉 Complaint submitted! You earned +${pointsResult.points} points`);
     
     setTimeout(() => navigate('/complaints'), 2000);
   };
@@ -275,6 +297,18 @@ export default function SubmitComplaint() {
                 {locations.map(loc => <option key={loc} value={loc}>{loc}</option>)}
               </select>
               {errors.location && <span className="error-text">{errors.location}</span>}
+            </div>
+
+            <div className="form-group">
+              <label>Attach Image (optional)</label>
+              <div className="input-wrapper">
+                <input type="file" accept="image/*" onChange={handleFileChange} />
+              </div>
+              {imagePreview && (
+                <div className="image-preview">
+                  <img src={imagePreview} alt="preview" style={{ maxWidth: '200px', borderRadius: 8, marginTop: 8 }} />
+                </div>
+              )}
             </div>
 
             {/* AI Analyze Button */}
