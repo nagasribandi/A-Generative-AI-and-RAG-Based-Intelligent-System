@@ -1,60 +1,38 @@
 // =====================================================
-// Email Service using EmailJS
+// Email Service — sends via backend (Nodemailer)
 // =====================================================
-// 
-// FOR VERCEL DEPLOYMENT:
-// Set these environment variables in Vercel Dashboard → Settings → Environment Variables:
-//   REACT_APP_EMAILJS_PUBLIC_KEY  = your EmailJS public key
-//   REACT_APP_EMAILJS_SERVICE_ID  = your EmailJS service ID
-//   REACT_APP_EMAILJS_TEMPLATE_OTP = your OTP template ID (default: template_otp)
-//   REACT_APP_EMAILJS_TEMPLATE_URGENT = your urgent template ID (default: template_urgent)
+// OTP emails still use EmailJS (client-side, no backend needed).
+// All other emails (admin notifications, approval/rejection)
+// go through the Express backend → Nodemailer → Gmail SMTP.
 //
-// FOR LOCAL DEVELOPMENT:
-// Create a .env file in project root with the same variables above.
-//
-// EMAILJS SETUP:
-// 1. Go to https://www.emailjs.com/ and create a free account
-// 2. Add an Email Service (Gmail recommended) → get SERVICE_ID
-// 3. Create TWO email templates:
-//
-//    Template 1: OTP Verification
-//    Subject: "Smart Campus - Your OTP Verification Code"
-//    Body: 
-//      Hello {{to_name}},
-//      Your OTP verification code is: {{otp_code}}
-//      This code expires in 5 minutes.
-//      If you didn't request this, please ignore this email.
-//      - Smart Campus AI Team
-//
-//    Template 2: Urgent Complaint Alert
-//    Subject: "🚨 URGENT: {{complaint_title}}"
-//    Body:
-//      Dear {{to_name}},
-//      A HIGH PRIORITY complaint has been filed:
-//      ID: {{complaint_id}}
-//      Title: {{complaint_title}}
-//      Category: {{category}}
-//      Location: {{location}}
-//      Description: {{description}}
-//      Filed by: {{student_name}} ({{student_email}})
-//      AI Action Plan has been generated. Please login to review.
-//      - Smart Campus AI System
-//
-// 4. Get your PUBLIC_KEY from Account > API Keys
-// 5. Set environment variables in Vercel or .env
+// Backend URL:  REACT_APP_API_URL  (e.g. http://localhost:4000)
+// Admin key:    REACT_APP_ADMIN_KEY (must match server's ADMIN_API_KEY)
 // =====================================================
 
-// Read from environment variables, with hardcoded fallbacks
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
+const ADMIN_KEY = process.env.REACT_APP_ADMIN_KEY || 'dev-admin-key';
+
+// EmailJS config — only used for OTP emails
 const EMAILJS_CONFIG = {
   PUBLIC_KEY: process.env.REACT_APP_EMAILJS_PUBLIC_KEY || '_NYIsUgyId5xv6-z_',
   SERVICE_ID: process.env.REACT_APP_EMAILJS_SERVICE_ID || 'service_bjbum8z',
-  TEMPLATE_OTP: process.env.REACT_APP_EMAILJS_TEMPLATE_OTP || 'template_c9trkaj',
-  TEMPLATE_URGENT: process.env.REACT_APP_EMAILJS_TEMPLATE_URGENT || 'template_urgent'
+  TEMPLATE_OTP: process.env.REACT_APP_EMAILJS_TEMPLATE_OTP || 'template_c9trkaj'
 };
 
-// Additional templates for admin notifications and approval emails
-EMAILJS_CONFIG.TEMPLATE_NEWUSER = process.env.REACT_APP_EMAILJS_TEMPLATE_NEWUSER || 'template_newuser';
-EMAILJS_CONFIG.TEMPLATE_APPROVAL = process.env.REACT_APP_EMAILJS_TEMPLATE_APPROVAL || 'template_approval';
+// ── Helper: send email via backend ───────────────────
+async function sendViaBackend(to, subject, body) {
+  try {
+    const res = await fetch(`${API_URL}/api/send-email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': ADMIN_KEY },
+      body: JSON.stringify({ to, subject, body })
+    });
+    return await res.json();
+  } catch (err) {
+    console.warn('[Email] Backend unreachable, email skipped:', err.message);
+    return { success: false, error: err.message };
+  }
+}
 
 // Generate a 6-digit OTP
 export function generateOTP() {
@@ -130,7 +108,7 @@ export async function sendOTPEmail(toEmail, toName, otp) {
   }
 }
 
-// Send urgent complaint email to admins
+// Send urgent complaint email to admins via backend
 export async function sendUrgentComplaintEmail(complaint) {
   const users = JSON.parse(localStorage.getItem('smart_campus_users') || '[]');
   const admins = users.filter(u => u.role === 'admin');
@@ -139,40 +117,26 @@ export async function sendUrgentComplaintEmail(complaint) {
     return { success: false, message: 'No admins to notify' };
   }
 
-  try {
-    const emailjs = await import('@emailjs/browser');
-    const results = [];
-
-    for (const admin of admins) {
-      try {
-        await emailjs.send(
-          EMAILJS_CONFIG.SERVICE_ID,
-          EMAILJS_CONFIG.TEMPLATE_URGENT,
-          {
-            to_email: admin.email,
-            to_name: admin.name,
-            complaint_id: complaint.id,
-            complaint_title: complaint.title,
-            category: complaint.category,
-            location: complaint.location,
-            description: complaint.description.substring(0, 500),
-            student_name: complaint.userName,
-            student_email: complaint.userEmail,
-            priority: complaint.priority
-          },
-          EMAILJS_CONFIG.PUBLIC_KEY
-        );
-        results.push({ email: admin.email, sent: true });
-      } catch (err) {
-        results.push({ email: admin.email, sent: false, error: err.message });
-      }
-    }
-
-    return { success: true, demo: false, results };
-  } catch (error) {
-    console.error('EmailJS Urgent Alert Error:', error);
-    return { success: false, message: error.message };
+  const results = [];
+  for (const admin of admins) {
+    const result = await sendViaBackend(
+      admin.email,
+      `🚨 URGENT: ${complaint.title}`,
+      `<h2>High Priority Complaint Filed</h2>
+       <p><b>ID:</b> ${complaint.id}</p>
+       <p><b>Title:</b> ${complaint.title}</p>
+       <p><b>Category:</b> ${complaint.category}</p>
+       <p><b>Location:</b> ${complaint.location}</p>
+       <p><b>Description:</b> ${complaint.description?.substring(0, 500)}</p>
+       <p><b>Filed by:</b> ${complaint.userName} (${complaint.userEmail})</p>
+       <p><b>Priority:</b> ${complaint.priority}</p>
+       <br><p>AI Action Plan has been generated. Please login to review.</p>
+       <p>— Smart Campus AI System</p>`
+    );
+    results.push({ email: admin.email, sent: result.success !== false });
   }
+
+  return { success: true, results };
 }
 
 // Admin email list for display
@@ -181,62 +145,43 @@ export function getAdminEmails() {
   return users.filter(u => u.role === 'admin').map(a => ({ name: a.name, email: a.email }));
 }
 
-// Send notification to all admins when a new user signs up (pending approval)
+// Send notification to all admins when a new user signs up
 export async function sendNewUserNotification(newUser) {
   const users = JSON.parse(localStorage.getItem('smart_campus_users') || '[]');
   const admins = users.filter(u => u.role === 'admin');
   if (admins.length === 0) return { success: false, message: 'No admins configured' };
 
-  try {
-    const emailjs = await import('@emailjs/browser');
-    const results = [];
-    for (const admin of admins) {
-      try {
-        await emailjs.send(
-          EMAILJS_CONFIG.SERVICE_ID,
-          EMAILJS_CONFIG.TEMPLATE_NEWUSER,
-          {
-            to_email: admin.email,
-            to_name: admin.name,
-            user_name: newUser.name,
-            user_email: newUser.email,
-            user_department: newUser.department || '',
-            user_studentId: newUser.studentId || '',
-            user_createdAt: newUser.createdAt
-          },
-          EMAILJS_CONFIG.PUBLIC_KEY
-        );
-        results.push({ email: admin.email, sent: true });
-      } catch (err) {
-        results.push({ email: admin.email, sent: false, error: err.message });
-      }
-    }
-    return { success: true, results };
-  } catch (error) {
-    console.error('EmailJS NewUser Notification Error:', error);
-    return { success: false, message: error.message };
+  const results = [];
+  for (const admin of admins) {
+    const result = await sendViaBackend(
+      admin.email,
+      `New signup request: ${newUser.name}`,
+      `<h2>New User Signup — Awaiting Approval</h2>
+       <p><b>Name:</b> ${newUser.name}</p>
+       <p><b>Email:</b> ${newUser.email}</p>
+       <p><b>Department:</b> ${newUser.department || 'N/A'}</p>
+       <p><b>Student ID:</b> ${newUser.studentId || 'N/A'}</p>
+       <p><b>Signed up:</b> ${newUser.createdAt}</p>
+       <br><p>Please log into the Admin Panel to approve or reject this request.</p>
+       <p>— Smart Campus AI System</p>`
+    );
+    results.push({ email: admin.email, sent: result.success !== false });
   }
+  return { success: true, results };
 }
 
 // Send approval/rejection email to a user after admin decision
 export async function sendSignupDecisionEmail(toEmail, toName, approved, adminName, reason = '') {
-  try {
-    const emailjs = await import('@emailjs/browser');
-    await emailjs.send(
-      EMAILJS_CONFIG.SERVICE_ID,
-      EMAILJS_CONFIG.TEMPLATE_APPROVAL,
-      {
-        to_email: toEmail,
-        to_name: toName,
-        approved: approved ? 'approved' : 'rejected',
-        admin_name: adminName || 'Site Admin',
-        reason
-      },
-      EMAILJS_CONFIG.PUBLIC_KEY
-    );
-    return { success: true };
-  } catch (error) {
-    console.error('EmailJS Signup Decision Error:', error);
-    return { success: false, message: error.message };
-  }
+  const status = approved ? 'approved' : 'rejected';
+  const extra = reason || (approved ? 'You can now log in to your account.' : 'Please contact the administrator for more details.');
+
+  return await sendViaBackend(
+    toEmail,
+    `Your signup has been ${status}`,
+    `<h2>Signup ${status.charAt(0).toUpperCase() + status.slice(1)}</h2>
+     <p>Hello ${toName},</p>
+     <p>Your signup request for the Smart Campus system has been <b>${status}</b> by ${adminName || 'Site Admin'}.</p>
+     <p>${extra}</p>
+     <br><p>— Smart Campus AI System</p>`
+  );
 }

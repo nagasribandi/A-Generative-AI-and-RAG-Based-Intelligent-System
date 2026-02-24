@@ -4,10 +4,41 @@ const fs = require('fs');
 const path = require('path');
 const bodyParser = require('body-parser');
 const { v4: uuidv4 } = require('uuid');
+const nodemailer = require('nodemailer');
 
 const DATA_FILE = path.join(__dirname, 'db.json');
 const PORT = process.env.PORT || 4000;
 const ADMIN_KEY = process.env.ADMIN_API_KEY || 'dev-admin-key';
+
+// ── Email config ─────────────────────────────────────
+// Set these env vars, or edit the defaults below with your Gmail + App Password
+const SMTP_USER = process.env.SMTP_USER || 'araveenipipavath@gmail.com';
+const SMTP_PASS = process.env.SMTP_PASS || '';  // paste your 16-char Google App Password here
+const SMTP_FROM = process.env.SMTP_FROM || '"Smart Campus Detection" <araveenipipavath@gmail.com>';
+
+const transporter = nodemailer.createTransport({
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false,
+  auth: { user: SMTP_USER, pass: SMTP_PASS }
+});
+
+// Verify SMTP on startup (non-blocking)
+transporter.verify().then(() => {
+  console.log('✅ SMTP ready — emails will be sent');
+}).catch(err => {
+  console.warn('⚠️  SMTP not configured — emails disabled. Error:', err.message);
+});
+
+async function sendMail(to, subject, html) {
+  if (!SMTP_PASS) {
+    console.log('[EMAIL SKIPPED] No SMTP_PASS set. Would have sent to:', to, '| Subject:', subject);
+    return { skipped: true };
+  }
+  const info = await transporter.sendMail({ from: SMTP_FROM, to, subject, html });
+  console.log('[EMAIL SENT]', to, '|', subject, '| messageId:', info.messageId);
+  return { sent: true, messageId: info.messageId };
+}
 
 function readData() {
   try {
@@ -156,6 +187,22 @@ app.get('/api/export/users.csv', requireAdmin, (req, res) => {
   res.setHeader('Content-Type', 'text/csv');
   res.setHeader('Content-Disposition', 'attachment; filename="users.csv"');
   res.send(csv);
+});
+
+// ── Send Email ───────────────────────────────────────
+// POST /api/send-email  { to, subject, body }
+app.post('/api/send-email', requireAdmin, async (req, res) => {
+  const { to, subject, body } = req.body;
+  if (!to || !subject || !body) {
+    return res.status(400).json({ error: 'to, subject, and body are required' });
+  }
+  try {
+    const result = await sendMail(to, subject, body);
+    res.json({ success: true, ...result });
+  } catch (err) {
+    console.error('[EMAIL ERROR]', err.message);
+    res.json({ success: false, error: err.message });
+  }
 });
 
 app.listen(PORT, () => {
