@@ -2,6 +2,8 @@
 // AI Classification Engine (Simulated GenAI + RAG)
 // =====================================================
 
+import { fbGetComplaints, fbCreateComplaint, fbUpdateComplaint } from './firebase';
+
 // Category classification keywords
 const CATEGORY_RULES = {
   'Infrastructure': ['building', 'wall', 'roof', 'ceiling', 'floor', 'door', 'window', 'crack', 'broken', 'damage', 'leak', 'repair', 'construction', 'paint', 'tile', 'stair', 'ramp', 'lift', 'elevator', 'parking'],
@@ -245,35 +247,30 @@ export function generateAISummary(text, category, priority) {
   return summaries[priority] || summaries['Low'];
 }
 
-// Complaint storage
-const COMPLAINTS_KEY = 'smart_campus_complaints';
+// Complaint storage — Firebase backed
 
-export function getComplaints() {
-  const stored = localStorage.getItem(COMPLAINTS_KEY);
-  if (stored) return JSON.parse(stored);
-  
-  // Seed with sample data
-  const samples = generateSampleComplaints();
-  localStorage.setItem(COMPLAINTS_KEY, JSON.stringify(samples));
-  return samples;
+export async function getComplaints() {
+  const complaints = await fbGetComplaints();
+  if (complaints.length === 0) {
+    // Seed with sample data
+    const samples = generateSampleComplaints();
+    for (const s of samples) {
+      await fbCreateComplaint(s);
+    }
+    return samples;
+  }
+  return complaints;
 }
 
-export function saveComplaint(complaint) {
-  const complaints = getComplaints();
-  complaints.unshift(complaint);
-  localStorage.setItem(COMPLAINTS_KEY, JSON.stringify(complaints));
+export async function saveComplaint(complaint) {
+  await fbCreateComplaint(complaint);
   return complaint;
 }
 
-export function updateComplaint(id, updates) {
-  const complaints = getComplaints();
-  const idx = complaints.findIndex(c => c.id === id);
-  if (idx !== -1) {
-    complaints[idx] = { ...complaints[idx], ...updates };
-    localStorage.setItem(COMPLAINTS_KEY, JSON.stringify(complaints));
-    return complaints[idx];
-  }
-  return null;
+export async function updateComplaint(id, updates) {
+  await fbUpdateComplaint(id, updates);
+  const complaints = await fbGetComplaints();
+  return complaints.find(c => c.id === id) || null;
 }
 
 function generateSampleComplaints() {

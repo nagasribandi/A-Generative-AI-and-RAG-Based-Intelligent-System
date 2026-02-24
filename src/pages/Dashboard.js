@@ -19,7 +19,7 @@ export default function Dashboard() {
   const [complaints, setComplaints] = useState([]);
 
   useEffect(() => {
-    setComplaints(getComplaints());
+    getComplaints().then(data => setComplaints(data));
   }, []);
 
   const stats = {

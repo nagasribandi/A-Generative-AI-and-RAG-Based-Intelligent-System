@@ -156,8 +156,9 @@ export function validateDepartmentMatch(rollNo, selectedDept) {
 /**
  * Check for duplicate roll number
  */
-export function checkDuplicateRoll(rollNo) {
-  const users = JSON.parse(localStorage.getItem('smart_campus_users') || '[]');
+export async function checkDuplicateRoll(rollNo) {
+  const { fbGetUsers } = await import('./firebase');
+  const users = await fbGetUsers();
   const exists = users.find(u => u.studentId && u.studentId.toUpperCase() === rollNo.toUpperCase());
   if (exists) {
     return { duplicate: true, message: 'This roll number is already registered. Contact admin if this is an error.' };

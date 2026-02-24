@@ -1,8 +1,25 @@
 // =====================================================
 // Gamification Engine — Points, Badges & Leaderboard
 // =====================================================
+// Uses Firebase for persistence with a local cache
+// so existing sync callers continue to work.
+// =====================================================
 
-const POINTS_KEY = 'smart_campus_points';
+import { fbGetPoints, fbSavePoints, onPointsChange } from './firebase';
+
+// In-memory cache — synced to/from Firebase
+let _pointsCache = {};
+let _cacheReady = false; // eslint-disable-line no-unused-vars
+
+// Boot: pull from Firebase once, then keep in sync via listener
+(async () => {
+  try {
+    _pointsCache = await fbGetPoints();
+    _cacheReady = true;
+  } catch (e) { console.error('Gamification init:', e); }
+  // Real-time listener keeps cache fresh
+  onPointsChange((data) => { _pointsCache = data || {}; _cacheReady = true; });
+})();
 
 // Point values for different actions
 const POINT_VALUES = {
@@ -40,15 +57,15 @@ const RANK_TIERS = [
   { name: 'Legend', minPoints: 500, icon: '👑', color: '#e74c3c' }
 ];
 
-// Get all user points data
+// Get all user points data (from cache)
 function getPointsData() {
-  const stored = localStorage.getItem(POINTS_KEY);
-  if (stored) return JSON.parse(stored);
-  return {};
+  return _pointsCache;
 }
 
 function savePointsData(data) {
-  localStorage.setItem(POINTS_KEY, JSON.stringify(data));
+  _pointsCache = data;
+  // Fire-and-forget write to Firebase
+  fbSavePoints(data).catch(err => console.error('savePointsData:', err));
 }
 
 // Get user points entry (creates if not exists)

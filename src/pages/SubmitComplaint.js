@@ -201,7 +201,7 @@ export default function SubmitComplaint() {
       updatedAt: new Date().toISOString()
     };
 
-  saveComplaint(complaint);
+  await saveComplaint(complaint);
 
     // Award gamification points for submitting a complaint
     const pointsResult = awardPoints(user.id, user.name, 'SUBMIT_COMPLAINT', complaint.id);

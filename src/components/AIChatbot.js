@@ -136,7 +136,7 @@ export default function AIChatbot() {
     setInput('');
     setIsTyping(true);
 
-    const complaints = getComplaints();
+    const complaints = await getComplaints();
     
     // First check for navigation commands (handle locally, no need for AI)
     const lower = userMsg.text.toLowerCase();

@@ -16,16 +16,17 @@ export default function ComplaintDetail() {
   const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
-    const complaints = getComplaints();
-    const found = complaints.find(c => c.id === id);
-    if (found) setComplaint(found);
-    else navigate('/complaints');
+    getComplaints().then(complaints => {
+      const found = complaints.find(c => c.id === id);
+      if (found) setComplaint(found);
+      else navigate('/complaints');
+    });
   }, [id, navigate]);
 
   if (!complaint) return <div className="loading-screen"><div className="spinner"></div></div>;
 
-  const handleStatusUpdate = (newStatus) => {
-    const updated = updateComplaint(complaint.id, { status: newStatus, updatedAt: new Date().toISOString() });
+  const handleStatusUpdate = async (newStatus) => {
+    const updated = await updateComplaint(complaint.id, { status: newStatus, updatedAt: new Date().toISOString() });
     if (updated) {
       setComplaint(updated);
       toast.success(`Status updated to ${newStatus}`);
@@ -84,7 +85,7 @@ export default function ComplaintDetail() {
           ))}
               <button className="status-btn fake-btn" onClick={async () => {
                 if (!window.confirm('Mark this complaint as Fake information? This will penalize the reporter.')) return;
-                const updated = updateComplaint(complaint.id, { status: 'Fake', updatedAt: new Date().toISOString() });
+                const updated = await updateComplaint(complaint.id, { status: 'Fake', updatedAt: new Date().toISOString() });
                 if (updated) {
                   setComplaint(updated);
                   // Penalize reporter heavily

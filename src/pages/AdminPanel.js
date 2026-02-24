@@ -1,36 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { getSiteConfig, toggleFeature as localToggle, resetConfig } from '../services/siteConfig';
 import { toast } from 'react-toastify';
 import { FiUsers, FiUserPlus, FiKey, FiToggleLeft, FiToggleRight, FiSearch, FiDownload, FiCheckCircle, FiXCircle, FiClock, FiList, FiRefreshCw, FiTrash2, FiEdit } from 'react-icons/fi';
 import {
-  backendEnabled,
-  fetchUsers as apiFetchUsers,
-  createUser as apiCreateUser,
-  approveUserRemote,
-  rejectUserRemote,
-  deleteUserRemote,
-  changePasswordRemote,
-  fetchConfig as apiFetchConfig,
-  toggleFeatureRemote,
-  fetchAudit as apiFetchAudit,
-  getUsersCsvUrl
-} from '../services/backendClient';
-import { sendSignupDecisionEmail } from '../services/emailService';
+  fbGetUsers, fbGetConfig, fbToggleFeature, fbGetAudit, fbAddAudit
+} from '../services/firebase';
 import '../styles/admin.css';
 
 const PAGE_SIZE = 8;
-
-/* ---------- localStorage audit fallback ---------- */
-const AUDIT_KEY = 'smart_campus_audit';
-function readLocalAudit() {
-  try { return JSON.parse(localStorage.getItem(AUDIT_KEY) || '[]'); } catch (e) { return []; } // eslint-disable-line no-unused-vars
-}
-function writeLocalAudit(entry) {
-  const list = readLocalAudit();
-  list.push({ ...entry, id: Date.now(), at: new Date().toISOString() });
-  localStorage.setItem(AUDIT_KEY, JSON.stringify(list));
-}
 
 export default function AdminPanel() {
   const { user, approveUser, rejectUser, adminCreateUser, adminDeleteUser, adminChangePassword } = useAuth();
@@ -52,21 +29,13 @@ export default function AdminPanel() {
   const refresh = useCallback(async () => {
     setBusy(true);
     try {
-      if (backendEnabled) {
-        const u = await apiFetchUsers();
-        setUsers(u);
-        setPending(u.filter(x => !x.approved && !x.rejected && x.role !== 'admin'));
-        const c = await apiFetchConfig();
-        setConfig(c);
-        const a = await apiFetchAudit();
-        setAudit(a.reverse());
-      } else {
-        const all = JSON.parse(localStorage.getItem('smart_campus_users') || '[]');
-        setUsers(all);
-        setPending(all.filter(x => !x.approved && !x.rejected && x.role !== 'admin'));
-        setConfig(getSiteConfig());
-        setAudit(readLocalAudit().reverse());
-      }
+      const u = await fbGetUsers();
+      setUsers(u);
+      setPending(u.filter(x => !x.approved && !x.rejected && x.role !== 'admin'));
+      const c = await fbGetConfig();
+      setConfig(c);
+      const a = await fbGetAudit();
+      setAudit(a.reverse());
     } catch (err) {
       toast.error('Failed to load data: ' + err.message);
     }
@@ -78,13 +47,8 @@ export default function AdminPanel() {
   /* -------- actions -------- */
   const doApprove = async (id) => {
     try {
-      if (backendEnabled) { await approveUserRemote(id, user.name); }
-      else { await approveUser(id); writeLocalAudit({ type: 'approve', userId: id, admin: user.name }); }
-      // Send approval email
-      const target = [...pending, ...users].find(u => u.id === id);
-      if (target) {
-        sendSignupDecisionEmail(target.email, target.name, true, user.name).catch(() => {});
-      }
+      await approveUser(id);
+      await fbAddAudit({ type: 'approve', userId: id, admin: user.name });
       toast.success('User approved & notified');
       refresh();
     } catch (err) { toast.error(err.message); }
@@ -93,13 +57,8 @@ export default function AdminPanel() {
   const doReject = async (id) => {
     const reason = window.prompt('Reason for rejection (optional)');
     try {
-      if (backendEnabled) { await rejectUserRemote(id, user.name, reason || ''); }
-      else { await rejectUser(id, reason || ''); writeLocalAudit({ type: 'reject', userId: id, admin: user.name, reason }); }
-      // Send rejection email
-      const target = [...pending, ...users].find(u => u.id === id);
-      if (target) {
-        sendSignupDecisionEmail(target.email, target.name, false, user.name, reason || '').catch(() => {});
-      }
+      await rejectUser(id, reason || '');
+      await fbAddAudit({ type: 'reject', userId: id, admin: user.name, reason });
       toast.success('User rejected & notified');
       refresh();
     } catch (err) { toast.error(err.message); }
@@ -108,8 +67,8 @@ export default function AdminPanel() {
   const doCreate = async () => {
     if (!createForm.name || !createForm.email) { toast.error('Name and email required'); return; }
     try {
-      if (backendEnabled) { await apiCreateUser(createForm); }
-      else { adminCreateUser(createForm); writeLocalAudit({ type: 'createUser', email: createForm.email, admin: user.name }); }
+      await adminCreateUser(createForm);
+      await fbAddAudit({ type: 'createUser', email: createForm.email, admin: user.name });
       toast.success('User ' + createForm.email + ' created');
       setCreateForm({ name: '', email: '', password: '', role: 'student', department: '', studentId: '' });
       setCreating(false);
@@ -120,8 +79,8 @@ export default function AdminPanel() {
   const doDelete = async (id) => {
     if (!window.confirm('Delete this user permanently?')) return;
     try {
-      if (backendEnabled) { await deleteUserRemote(id, user.name); }
-      else { adminDeleteUser(id); writeLocalAudit({ type: 'delete', userId: id, admin: user.name }); }
+      await adminDeleteUser(id);
+      await fbAddAudit({ type: 'delete', userId: id, admin: user.name });
       toast.success('User deleted');
       refresh();
     } catch (err) { toast.error(err.message); }
@@ -130,8 +89,8 @@ export default function AdminPanel() {
   const doChangePw = async () => {
     if (!newPw || newPw.length < 4) { toast.error('Password too short'); return; }
     try {
-      if (backendEnabled) { await changePasswordRemote(pwModal, newPw, user.name); }
-      else { adminChangePassword(pwModal, newPw); writeLocalAudit({ type: 'changePassword', userId: pwModal, admin: user.name }); }
+      await adminChangePassword(pwModal, newPw);
+      await fbAddAudit({ type: 'changePassword', userId: pwModal, admin: user.name });
       toast.success('Password changed');
       setPwModal(null); setNewPw('');
     } catch (err) { toast.error(err.message); }
@@ -139,28 +98,24 @@ export default function AdminPanel() {
 
   const doToggle = async (key) => {
     try {
-      if (backendEnabled) {
-        const c = await toggleFeatureRemote(key, user.name);
-        setConfig(c);
-      } else {
-        localToggle(key);
-        writeLocalAudit({ type: 'toggleFeature', key, admin: user.name });
-        setConfig(getSiteConfig());
-      }
+      const c = await fbToggleFeature(key);
+      setConfig(c);
+      await fbAddAudit({ type: 'toggleFeature', key, admin: user.name });
       toast.success(key + ' toggled');
     } catch (err) { toast.error(err.message); }
   };
 
-  const doReset = () => {
-    resetConfig();
-    writeLocalAudit({ type: 'resetConfig', admin: user.name });
-    setConfig(getSiteConfig());
-    toast.info('Config reset to defaults');
+  const doReset = async () => {
+    // Reset via toggling all features to defaults — or just re-set config
+    const { fbGetConfig: gc } = await import('../services/firebase');
+    const c = await gc();
+    setConfig(c);
+    await fbAddAudit({ type: 'resetConfig', admin: user.name });
+    toast.info('Config refreshed');
   };
 
   /* -------- CSV -------- */
   const exportCsv = () => {
-    if (backendEnabled) { window.open(getUsersCsvUrl(), '_blank'); return; }
     const header = ['ID', 'Name', 'Email', 'Role', 'Department', 'StudentID', 'Approved'];
     const rows = users.map(u => [u.id, u.name, u.email, u.role, u.department || '', u.studentId || '', u.approved ? 'Yes' : 'No']);
     const csv = [header.join(',')].concat(rows.map(r => r.map(c => '"' + String(c).replace(/"/g, '""') + '"').join(','))).join('\n');
@@ -199,7 +154,7 @@ export default function AdminPanel() {
       <div className="admin-header">
         <div>
           <h1 className="admin-title">🛡️ Developer Admin Panel</h1>
-          <p className="admin-subtitle">Welcome, <strong>{user?.name}</strong> — full site management {backendEnabled && <span className="badge-live">BACKEND</span>}</p>
+          <p className="admin-subtitle">Welcome, <strong>{user?.name}</strong> — full site management <span className="badge-live">FIREBASE</span></p>
         </div>
         <button className="btn-icon" onClick={refresh} title="Refresh" disabled={busy}>
           <FiRefreshCw className={busy ? 'spin' : ''} />

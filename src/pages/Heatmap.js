@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiMapPin, FiAlertCircle, FiCheckCircle, FiClock, FiFilter, FiChevronRight, FiTrendingUp, FiShield } from 'react-icons/fi';
@@ -12,8 +12,11 @@ export default function Heatmap() {
   const navigate = useNavigate();
   const [selectedZone, setSelectedZone] = useState(null);
   const [filterStatus, setFilterStatus] = useState('all');
+  const [complaints, setComplaints] = useState([]);
 
-  const complaints = useMemo(() => getComplaints(), []);
+  useEffect(() => {
+    getComplaints().then(data => setComplaints(data));
+  }, []);
 
   // Get complaints for the selected zone
   const zoneComplaints = useMemo(() => {

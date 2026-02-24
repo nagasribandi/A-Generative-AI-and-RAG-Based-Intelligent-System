@@ -1,5 +1,6 @@
-// Simple site configuration stored in localStorage
-const CONFIG_KEY = 'smart_campus_config';
+// Site configuration — Firebase backed
+import { fbGetConfig, fbToggleFeature } from './firebase';
+import { ref, set, getDatabase } from 'firebase/database';
 
 const DEFAULTS = {
   features: {
@@ -10,35 +11,27 @@ const DEFAULTS = {
   }
 };
 
-export function getSiteConfig() {
-  const raw = localStorage.getItem(CONFIG_KEY);
-  if (!raw) {
-    localStorage.setItem(CONFIG_KEY, JSON.stringify(DEFAULTS));
-    return DEFAULTS;
-  }
+export async function getSiteConfig() {
   try {
-    return JSON.parse(raw);
+    return await fbGetConfig();
   } catch (err) {
-    localStorage.setItem(CONFIG_KEY, JSON.stringify(DEFAULTS));
+    console.error('getSiteConfig error:', err);
     return DEFAULTS;
   }
 }
 
-export function saveSiteConfig(cfg) {
-  localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg));
+export async function saveSiteConfig(cfg) {
+  const db = getDatabase();
+  await set(ref(db, 'config'), cfg);
 }
 
-export function toggleFeature(featureKey) {
-  const cfg = getSiteConfig();
-  if (cfg.features && typeof cfg.features[featureKey] !== 'undefined') {
-    cfg.features[featureKey] = !cfg.features[featureKey];
-    saveSiteConfig(cfg);
-    return cfg.features[featureKey];
-  }
-  return null;
+export async function toggleFeature(featureKey) {
+  const result = await fbToggleFeature(featureKey);
+  return result.features[featureKey];
 }
 
-export function resetConfig() {
-  localStorage.setItem(CONFIG_KEY, JSON.stringify(DEFAULTS));
+export async function resetConfig() {
+  const db = getDatabase();
+  await set(ref(db, 'config'), DEFAULTS);
   return DEFAULTS;
 }

@@ -18,8 +18,8 @@ export default function ManageComplaints() {
   const [sortBy, setSortBy] = useState('newest');
   const [editingStatus, setEditingStatus] = useState(null);
 
-  const loadComplaints = useCallback(() => {
-    const all = getComplaints();
+  const loadComplaints = useCallback(async () => {
+    const all = await getComplaints();
     if (user.role === 'student') {
       setComplaints(all.filter(c => c.userId === user.id));
     } else {
@@ -65,9 +65,9 @@ export default function ManageComplaints() {
     return result;
   }, [complaints, search, categoryFilter, priorityFilter, statusFilter, sortBy]);
 
-  const handleStatusChange = (id, newStatus) => {
+  const handleStatusChange = async (id, newStatus) => {
     const complaint = complaints.find(c => c.id === id);
-    const updated = updateComplaint(id, { status: newStatus, updatedAt: new Date().toISOString() });
+    const updated = await updateComplaint(id, { status: newStatus, updatedAt: new Date().toISOString() });
     if (updated) {
       // Award points to the complaint author when resolved
       if (newStatus === 'Resolved' && complaint) {

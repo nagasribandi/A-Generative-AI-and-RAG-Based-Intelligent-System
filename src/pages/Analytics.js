@@ -16,7 +16,7 @@ export default function Analytics() {
   const [complaints, setComplaints] = useState([]);
 
   useEffect(() => {
-    setComplaints(getComplaints());
+    getComplaints().then(data => setComplaints(data));
   }, []);
 
   // Helper

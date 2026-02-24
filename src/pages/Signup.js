@@ -98,13 +98,13 @@ export default function Signup() {
   };
 
   // ===== STEP 2 VALIDATION =====
-  const validateStep2 = () => {
+  const validateStep2 = async () => {
     const errs = {};
     const rollResult = validateRollNumber(formData.studentId);
     if (!rollResult.valid) {
       errs.studentId = rollResult.message;
     } else {
-      const dupCheck = checkDuplicateRoll(formData.studentId);
+      const dupCheck = await checkDuplicateRoll(formData.studentId);
       if (dupCheck.duplicate) errs.studentId = dupCheck.message;
     }
     if (!formData.department) errs.department = 'Department is required';
@@ -122,7 +122,7 @@ export default function Signup() {
   };
 
   const handleNext2 = async () => {
-    if (!validateStep2()) return;
+    if (!(await validateStep2())) return;
     await handleSendOTP();
     setStep(3);
   };

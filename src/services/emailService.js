@@ -90,7 +90,8 @@ export async function sendOTPEmail(toEmail, toName, otp) {
 
 // Send urgent complaint email to admins via backend
 export async function sendUrgentComplaintEmail(complaint) {
-  const users = JSON.parse(localStorage.getItem('smart_campus_users') || '[]');
+  const { fbGetUsers } = await import('./firebase');
+  const users = await fbGetUsers();
   const admins = users.filter(u => u.role === 'admin');
 
   if (admins.length === 0) {
@@ -120,8 +121,9 @@ export async function sendUrgentComplaintEmail(complaint) {
 }
 
 // Admin email list for display
-export function getAdminEmails() {
-  const users = JSON.parse(localStorage.getItem('smart_campus_users') || '[]');
+export async function getAdminEmails() {
+  const { fbGetUsers } = await import('./firebase');
+  const users = await fbGetUsers();
   return users.filter(u => u.role === 'admin').map(a => ({ name: a.name, email: a.email }));
 }
 
