@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { FiAward, FiTrendingUp, FiStar, FiShield, FiTarget } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
@@ -7,11 +7,18 @@ import '../styles/leaderboard.css';
 
 export default function Leaderboard() {
   const { user } = useAuth();
+  const [tick, setTick] = useState(0);
 
-  const leaderboard = useMemo(() => getLeaderboard(), []);
-  const myStats = useMemo(() => getUserStats(user.id, user.name), [user.id, user.name]);
-  const myRank = useMemo(() => getUserRank(user.id, user.name), [user.id, user.name]);
-  const myBadges = useMemo(() => getUserBadges(user.id, user.name), [user.id, user.name]);
+  // Re-render after a short delay so the gamification cache has time to load from Firebase
+  useEffect(() => {
+    const t = setTimeout(() => setTick(1), 1500);
+    return () => clearTimeout(t);
+  }, []);
+
+  const leaderboard = useMemo(() => getLeaderboard(), [tick]); // eslint-disable-line react-hooks/exhaustive-deps
+  const myStats = useMemo(() => getUserStats(user.id, user.name), [user.id, user.name, tick]); // eslint-disable-line react-hooks/exhaustive-deps
+  const myRank = useMemo(() => getUserRank(user.id, user.name), [user.id, user.name, tick]); // eslint-disable-line react-hooks/exhaustive-deps
+  const myBadges = useMemo(() => getUserBadges(user.id, user.name), [user.id, user.name, tick]); // eslint-disable-line react-hooks/exhaustive-deps
   const myPosition = useMemo(() => {
     const idx = leaderboard.findIndex(e => e.userId === user.id);
     return idx >= 0 ? idx + 1 : leaderboard.length + 1;

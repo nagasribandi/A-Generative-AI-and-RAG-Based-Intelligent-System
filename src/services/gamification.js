@@ -87,6 +87,9 @@ function getUserPointsEntry(userId, userName) {
     };
     savePointsData(data);
   }
+  // Firebase drops empty arrays — ensure they always exist
+  if (!Array.isArray(data[userId].badges)) data[userId].badges = [];
+  if (!Array.isArray(data[userId].history)) data[userId].history = [];
   // Update name if changed
   if (userName && data[userId].userName !== userName) {
     data[userId].userName = userName;
