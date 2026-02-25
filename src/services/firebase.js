@@ -125,14 +125,14 @@ export async function fbAddAudit(entry) {
 // ── Seed default admin (runs once) ───────────────────
 export async function fbSeedAdmin() {
   const users = await fbGetUsers();
-  const adminExists = users.find(u => u.email === 'vardhaman@gmail.com' || u.role === 'admin');
+  const adminExists = users.find(u => u.email === 'vce@gmail.com' || u.role === 'admin');
   if (!adminExists) {
     const adminRef = ref(db, 'users/admin-001');
     await set(adminRef, {
       id: 'admin-001',
-      name: 'Vardhaman Admin',
-      email: 'vardhaman@gmail.com',
-      password: 'helloworld123',
+      name: 'VCE Admin',
+      email: 'vce@gmail.com',
+      password: 'Zxcvbnm@22',
       role: 'admin',
       department: 'Administration',
       studentId: 'ADM-001',

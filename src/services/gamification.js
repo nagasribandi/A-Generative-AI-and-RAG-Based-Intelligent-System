@@ -242,41 +242,7 @@ export function getLeaderboard() {
   });
 }
 
-// Seed some sample leaderboard data
-export function seedSampleLeaderboard() {
-  const data = getPointsData();
-  if (Object.keys(data).length > 1) return; // Already seeded
-
-  const sampleUsers = [
-    { id: 'sample-1', name: 'Rahul Sharma', points: 185, complaints: 12, resolved: 5, urgent: 2 },
-    { id: 'sample-2', name: 'Priya Patel', points: 140, complaints: 9, resolved: 3, urgent: 1 },
-    { id: 'sample-3', name: 'Amit Kumar', points: 95, complaints: 6, resolved: 2, urgent: 1 },
-    { id: 'sample-4', name: 'Sneha Reddy', points: 75, complaints: 5, resolved: 1, urgent: 0 },
-    { id: 'sample-5', name: 'Karthik Nair', points: 60, complaints: 4, resolved: 1, urgent: 1 },
-    { id: 'sample-6', name: 'Divya Iyer', points: 45, complaints: 3, resolved: 0, urgent: 0 },
-    { id: 'sample-7', name: 'Ravi Verma', points: 30, complaints: 2, resolved: 0, urgent: 0 }
-  ];
-
-  sampleUsers.forEach(u => {
-    data[u.id] = {
-      userId: u.id,
-      userName: u.name,
-      totalPoints: u.points,
-      complaintsSubmitted: u.complaints,
-      complaintsResolved: u.resolved,
-      urgentReports: u.urgent,
-      upvotesGiven: 0,
-      upvotesReceived: 0,
-      history: [],
-      badges: [],
-      lastActive: new Date().toISOString()
-    };
-    // Award badges
-    checkBadges(data[u.id]);
-  });
-
-  savePointsData(data);
-}
+// No sample data — leaderboard starts empty
 
 export { BADGE_DEFINITIONS, RANK_TIERS, POINT_VALUES };
 

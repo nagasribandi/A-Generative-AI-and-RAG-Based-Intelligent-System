@@ -1,16 +1,12 @@
-import React, { useMemo, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { FiAward, FiTrendingUp, FiStar, FiShield, FiTarget } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
-import { getLeaderboard, getUserStats, getUserBadges, getUserRank, seedSampleLeaderboard, RANK_TIERS } from '../services/gamification';
+import { getLeaderboard, getUserStats, getUserBadges, getUserRank, RANK_TIERS } from '../services/gamification';
 import '../styles/leaderboard.css';
 
 export default function Leaderboard() {
   const { user } = useAuth();
-
-  useEffect(() => {
-    seedSampleLeaderboard();
-  }, []);
 
   const leaderboard = useMemo(() => getLeaderboard(), []);
   const myStats = useMemo(() => getUserStats(user.id, user.name), [user.id, user.name]);
