@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiMessageCircle, FiX, FiSend, FiCpu, FiMinimize2, FiZap } from 'react-icons/fi';
 import { classifyComplaint, predictPriority, getComplaints } from '../services/aiEngine';
-import { geminiChatResponse, isGeminiEnabled } from '../services/geminiService';
+import { pyGeminiChat, pyClassifyComplaint, pyPredictPriority } from '../services/pythonAiService';
 import '../styles/chatbot.css';
 
 // Knowledge base for FAQ and campus info
@@ -96,9 +96,7 @@ export default function AIChatbot() {
     {
       id: 1,
       sender: 'bot',
-      text: isGeminiEnabled() 
-        ? 'Hello! 👋 I\'m the SmartCampus AI Assistant powered by **Google Gemini**. I can have intelligent conversations, analyze campus issues, and help you navigate the system!\n\nTry asking me anything about the campus!'
-        : 'Hello! 👋 I\'m the SmartCampus AI Assistant. How can I help you today?\n\nYou can ask me about complaints, campus zones, statistics, or describe an issue for instant AI analysis!',
+      text: 'Hello! 👋 I\'m the SmartCampus AI Assistant powered by **Python AI Backend**. I can have intelligent conversations, analyze campus issues, and help you navigate the system!\n\nTry asking me anything about the campus!',
       type: 'greeting',
       time: new Date()
     }
@@ -157,23 +155,32 @@ export default function AIChatbot() {
     }
 
     if (!response) {
-      // Try Gemini AI for intelligent response
-      if (isGeminiEnabled()) {
-        try {
-          await new Promise(resolve => setTimeout(resolve, 400));
-          
-          const stats = {
-            total: complaints.length,
-            open: complaints.filter(c => c.status === 'Open').length,
-            inProgress: complaints.filter(c => c.status === 'In Progress').length,
-            resolved: complaints.filter(c => c.status === 'Resolved').length
-          };
+      // Try Python AI backend for intelligent response
+      try {
+        await new Promise(resolve => setTimeout(resolve, 400));
+        
+        const stats = {
+          total: complaints.length,
+          open: complaints.filter(c => c.status === 'Open').length,
+          inProgress: complaints.filter(c => c.status === 'In Progress').length,
+          resolved: complaints.filter(c => c.status === 'Resolved').length
+        };
 
-          const geminiResult = await geminiChatResponse(userMsg.text, messages.slice(-8), stats);
-          response = { type: 'gemini', text: geminiResult.text };
-          
-          // If the response mentions analyzing a complaint, add analysis metadata
-          if (lower.length > 15 && /broken|not working|damage|leak|dirty|slow|problem|issue|faulty|crack|noise|smell|danger|fire|theft/i.test(lower)) {
+        const chatResult = await pyGeminiChat(userMsg.text, messages.slice(-8), stats);
+        response = { type: 'gemini', text: chatResult.text };
+        
+        // If the response mentions analyzing a complaint, add analysis metadata
+        if (lower.length > 15 && /broken|not working|damage|leak|dirty|slow|problem|issue|faulty|crack|noise|smell|danger|fire|theft/i.test(lower)) {
+          try {
+            const classification = await pyClassifyComplaint(lower);
+            const priority = await pyPredictPriority(lower);
+            response.analysis = { 
+              category: classification.category, 
+              confidence: classification.confidence, 
+              priority: priority.level 
+            };
+          } catch (analysisErr) {
+            // Use local fallback for analysis metadata
             const classification = classifyComplaint(lower);
             const priority = predictPriority(lower);
             response.analysis = { 
@@ -182,13 +189,10 @@ export default function AIChatbot() {
               priority: priority.level 
             };
           }
-        } catch (err) {
-          console.warn('Gemini chatbot fallback:', err.message);
-          // Fall back to rule-based
-          response = generateResponse(userMsg.text, complaints);
         }
-      } else {
-        // No Gemini — use rule-based engine
+      } catch (err) {
+        console.warn('Python AI chatbot fallback:', err.message);
+        // Fall back to local rule-based
         await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 700));
         response = generateResponse(userMsg.text, complaints);
       }
@@ -262,12 +266,12 @@ export default function AIChatbot() {
             <div className="chatbot-header">
               <div className="chatbot-header-info">
                 <div className="chatbot-avatar">
-                  {isGeminiEnabled() ? <FiZap /> : <FiCpu />}
+                  <FiZap />
                 </div>
                 <div>
                   <span className="chatbot-name">AI Assistant</span>
                   <span className="chatbot-status">
-                    <span className="status-dot" /> {isGeminiEnabled() ? 'Gemini AI' : 'Online'}
+                    <span className="status-dot" /> Python AI
                   </span>
                 </div>
               </div>
