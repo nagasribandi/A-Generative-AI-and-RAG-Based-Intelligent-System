@@ -1,0 +1,10 @@
+# Smart Campus AI Backend — Python Dependencies
+# ================================================
+
+# No external packages required — uses Python standard library
+# The backend leverages Python's built-in modules:
+#   - json: JSON parsing and serialization
+#   - re: Regular expressions for NLP pattern matching
+#   - os: Environment variable access
+#   - urllib: HTTP requests for Gemini AI API
+#   - typing: Type hints for code documentation
