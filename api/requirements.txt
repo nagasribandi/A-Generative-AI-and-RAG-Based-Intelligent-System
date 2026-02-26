@@ -1,3 +1,0 @@
-# Smart Campus AI Backend - Python Dependencies
-# Using Python standard library only (json, re, os, urllib)
-# No external packages required
