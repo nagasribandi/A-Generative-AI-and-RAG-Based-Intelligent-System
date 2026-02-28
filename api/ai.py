@@ -29,8 +29,23 @@ CATEGORY_RULES = {
     'Transport': ['bus', 'transport', 'shuttle', 'route', 'driver', 'vehicle', 'parking', 'traffic', 'bicycle', 'bike']
 }
 
-HIGH_KEYWORDS = ['urgent', 'emergency', 'fire', 'danger', 'hazard', 'immediate', 'critical', 'severe', 'flood', 'collapse', 'injury', 'broken glass', 'electrocution', 'short circuit', 'theft', 'stolen']
-MEDIUM_KEYWORDS = ['broken', 'not working', 'damaged', 'leaking', 'malfunction', 'faulty', 'intermittent', 'slow', 'frequent', 'recurring']
+HIGH_KEYWORDS = ['urgent', 'emergency', 'fire', 'danger', 'hazard', 'immediate', 'critical', 'severe',
+    'flood', 'collapse', 'injury', 'broken glass', 'electrocution', 'short circuit', 'theft', 'stolen',
+    'life threatening', 'unconscious', 'accident', 'explosion', 'gas leak', 'live wire', 'sparking',
+    'attacked', 'assault', 'bleeding', 'trapped', 'stuck in elevator', 'smoke', 'toxic',
+    'structural damage', 'ceiling fell', 'wall crack', 'sinkhole', 'electric shock']
+MEDIUM_KEYWORDS = ['broken', 'not working', 'damaged', 'leaking', 'malfunction', 'faulty', 'intermittent',
+    'slow', 'frequent', 'recurring', 'problem', 'issue', 'trouble', 'complaint', 'poor', 'bad',
+    'fail', 'failed', 'failure', 'stuck', 'jammed', 'noisy', 'noise', 'vibration', 'flickering',
+    'erratic', 'inconsistent', 'unreliable', 'defective', 'worn out', 'rusted', 'corroded',
+    'cracked', 'chipped', 'peeling', 'stained', 'overflowing', 'clogged', 'blocked',
+    'overcrowded', 'insufficient', 'inadequate', 'missing', 'absent', 'unavailable',
+    'delayed', 'late', 'irregular', 'disruptive', 'affecting', 'hindering', 'preventing',
+    'unable to', 'cannot', 'doesn\'t work', 'does not work', 'stopped working', 'out of order',
+    'need repair', 'needs fixing', 'please fix', 'help', 'seriously', 'very bad', 'terrible',
+    'horrible', 'disgusting', 'unbearable', 'unacceptable', 'pathetic', 'worst',
+    'since long', 'many days', 'weeks', 'no response', 'multiple times', 'again and again',
+    'still not', 'yet to be', 'pending', 'ignored', 'no action', 'several complaints']
 
 # SOP Database for RAG (Retrieval Augmented Generation)
 SOP_DATABASE = {
@@ -215,34 +230,76 @@ def classify_complaint(text: str) -> dict:
     lower = text.lower()
     best_category = 'Infrastructure'
     best_score = 0
+    all_scores = {}
 
     for category, keywords in CATEGORY_RULES.items():
         score = 0
+        matched_keywords = 0
         for keyword in keywords:
             if keyword in lower:
                 score += len(keyword.split())  # Multi-word matches score higher
+                matched_keywords += 1
+        all_scores[category] = score
         if score > best_score:
             best_score = score
             best_category = category
 
-    confidence = min(95, 60 + best_score * 8)
+    # Improved confidence formula:
+    # - Base 60 + keyword contribution + specificity bonus
+    # - Specificity: if top score is well above the second, confidence is higher
+    sorted_scores = sorted(all_scores.values(), reverse=True)
+    second_best = sorted_scores[1] if len(sorted_scores) > 1 else 0
+    gap = best_score - second_best  # How much more specific is the top category
+
+    if best_score == 0:
+        confidence = 55  # No keywords matched at all
+    else:
+        # Scale based on keyword score and specificity gap
+        keyword_contrib = min(20, best_score * 5)
+        specificity_bonus = min(10, gap * 4)
+        text_length_bonus = min(5, len(text.split()) // 10)  # Longer texts get slight boost
+        confidence = min(96, 62 + keyword_contrib + specificity_bonus + text_length_bonus)
+
     return {'category': best_category, 'confidence': confidence}
 
 
 def predict_priority(text: str) -> dict:
     """
     Priority prediction using NLP keyword analysis.
-    Scans for urgency indicators and severity markers.
+    Scans for urgency indicators, severity markers, and contextual signals.
     """
     lower = text.lower()
 
-    for keyword in HIGH_KEYWORDS:
-        if keyword in lower:
-            return {'level': 'High', 'color': '#ef4444'}
+    # Check for high priority indicators
+    high_matches = sum(1 for kw in HIGH_KEYWORDS if kw in lower)
+    if high_matches > 0:
+        return {'level': 'High', 'color': '#ef4444'}
 
-    for keyword in MEDIUM_KEYWORDS:
-        if keyword in lower:
-            return {'level': 'Medium', 'color': '#f59e0b'}
+    # Check for medium priority indicators
+    medium_matches = sum(1 for kw in MEDIUM_KEYWORDS if kw in lower)
+    if medium_matches > 0:
+        return {'level': 'Medium', 'color': '#f59e0b'}
+
+    # Contextual signals that push toward Medium even without exact keyword match
+    word_count = len(text.split())
+    has_exclamation = '!' in text
+    has_negative_sentiment = any(w in lower for w in [
+        'not', 'no', 'never', 'nothing', 'nowhere', 'neither',
+        'nobody', 'hardly', 'barely', 'scarcely', 'don\'t', 'doesn\'t',
+        'won\'t', 'can\'t', 'couldn\'t', 'shouldn\'t', 'wouldn\'t',
+        'isn\'t', 'aren\'t', 'wasn\'t', 'weren\'t'
+    ])
+    has_complaint_language = any(w in lower for w in [
+        'need', 'want', 'require', 'request', 'demand', 'expect',
+        'fix', 'resolve', 'address', 'attend', 'look into', 'take care',
+        'kindly', 'please', 'asap', 'soon', 'quickly', 'immediately'
+    ])
+
+    # If the text is descriptive enough and has problem indicators, it's at least Medium
+    if word_count >= 8 and (has_negative_sentiment or has_complaint_language):
+        return {'level': 'Medium', 'color': '#f59e0b'}
+    if has_exclamation and word_count >= 5:
+        return {'level': 'Medium', 'color': '#f59e0b'}
 
     return {'level': 'Low', 'color': '#22c55e'}
 

@@ -82,12 +82,32 @@ class SmartCampusAI:
     HIGH_KEYWORDS: List[str] = [
         'urgent', 'emergency', 'fire', 'danger', 'hazard', 'immediate',
         'critical', 'severe', 'flood', 'collapse', 'injury', 'broken glass',
-        'electrocution', 'short circuit', 'theft', 'stolen'
+        'electrocution', 'short circuit', 'theft', 'stolen',
+        'life threatening', 'unconscious', 'accident', 'explosion',
+        'gas leak', 'live wire', 'sparking', 'attacked', 'assault',
+        'bleeding', 'trapped', 'stuck in elevator', 'smoke', 'toxic',
+        'structural damage', 'ceiling fell', 'wall crack', 'sinkhole',
+        'electric shock'
     ]
 
     MEDIUM_KEYWORDS: List[str] = [
         'broken', 'not working', 'damaged', 'leaking', 'malfunction',
-        'faulty', 'intermittent', 'slow', 'frequent', 'recurring'
+        'faulty', 'intermittent', 'slow', 'frequent', 'recurring',
+        'problem', 'issue', 'trouble', 'complaint', 'poor', 'bad',
+        'fail', 'failed', 'failure', 'stuck', 'jammed', 'noisy', 'noise',
+        'vibration', 'flickering', 'erratic', 'inconsistent', 'unreliable',
+        'defective', 'worn out', 'rusted', 'corroded', 'cracked', 'chipped',
+        'peeling', 'stained', 'overflowing', 'clogged', 'blocked',
+        'overcrowded', 'insufficient', 'inadequate', 'missing', 'absent',
+        'unavailable', 'delayed', 'late', 'irregular', 'disruptive',
+        'affecting', 'hindering', 'preventing', 'unable to', 'cannot',
+        "doesn't work", 'does not work', 'stopped working', 'out of order',
+        'need repair', 'needs fixing', 'please fix', 'help', 'seriously',
+        'very bad', 'terrible', 'horrible', 'disgusting', 'unbearable',
+        'unacceptable', 'pathetic', 'worst', 'since long', 'many days',
+        'weeks', 'no response', 'multiple times', 'again and again',
+        'still not', 'yet to be', 'pending', 'ignored', 'no action',
+        'several complaints'
     ]
 
     def __init__(self):
@@ -108,30 +128,41 @@ class SmartCampusAI:
         2. Scan against all category keyword lists
         3. Multi-word keywords score higher (phrase matching)
         4. Category with highest cumulative score wins
-        5. Confidence calculated: min(95, 60 + score * 8)
+        5. Confidence uses improved formula with specificity bonus
 
         Args:
             text: The complaint description text to classify
 
         Returns:
-            dict with 'category' (str) and 'confidence' (int, 60-95)
+            dict with 'category' (str) and 'confidence' (int, 55-96)
         """
         lower = text.lower()
         best_category = 'Infrastructure'
         best_score = 0
+        all_scores = {}
 
         for category, keywords in self.CATEGORY_RULES.items():
             score = 0
             for keyword in keywords:
                 if keyword in lower:
-                    # Multi-word matches score higher for better accuracy
                     score += len(keyword.split())
+            all_scores[category] = score
             if score > best_score:
                 best_score = score
                 best_category = category
 
-        # Confidence scoring algorithm
-        confidence = min(95, 60 + best_score * 8)
+        # Improved confidence formula
+        sorted_scores = sorted(all_scores.values(), reverse=True)
+        second_best = sorted_scores[1] if len(sorted_scores) > 1 else 0
+        gap = best_score - second_best
+
+        if best_score == 0:
+            confidence = 55
+        else:
+            keyword_contrib = min(20, best_score * 5)
+            specificity_bonus = min(10, gap * 4)
+            text_length_bonus = min(5, len(text.split()) // 10)
+            confidence = min(96, 62 + keyword_contrib + specificity_bonus + text_length_bonus)
 
         return {
             'category': best_category,
@@ -142,10 +173,8 @@ class SmartCampusAI:
         """
         Predict complaint priority using NLP urgency detection.
 
-        Scans text for urgency indicators:
-        - HIGH: emergency, danger, fire, collapse, injury, etc.
-        - MEDIUM: broken, damaged, leaking, malfunctioning, etc.
-        - LOW: everything else (minor issues, suggestions)
+        Scans text for urgency indicators, severity markers, and
+        contextual signals like negation and complaint language.
 
         Args:
             text: The complaint description text
@@ -155,17 +184,30 @@ class SmartCampusAI:
         """
         lower = text.lower()
 
-        # Check for high priority indicators first
-        for keyword in self.HIGH_KEYWORDS:
-            if keyword in lower:
-                return {'level': 'High', 'color': '#ef4444'}
+        # Check for high priority indicators
+        if any(keyword in lower for keyword in self.HIGH_KEYWORDS):
+            return {'level': 'High', 'color': '#ef4444'}
 
         # Check for medium priority indicators
-        for keyword in self.MEDIUM_KEYWORDS:
-            if keyword in lower:
-                return {'level': 'Medium', 'color': '#f59e0b'}
+        if any(keyword in lower for keyword in self.MEDIUM_KEYWORDS):
+            return {'level': 'Medium', 'color': '#f59e0b'}
 
-        # Default: low priority
+        # Contextual signals
+        word_count = len(text.split())
+        has_exclamation = '!' in text
+        negative_words = ['not', 'no', 'never', 'nothing', "don't", "doesn't",
+                         "won't", "can't", "couldn't", "isn't", "aren't"]
+        has_negative = any(w in lower for w in negative_words)
+        complaint_words = ['need', 'want', 'require', 'request', 'fix', 'resolve',
+                          'address', 'attend', 'look into', 'kindly', 'please',
+                          'asap', 'soon', 'quickly']
+        has_complaint = any(w in lower for w in complaint_words)
+
+        if word_count >= 8 and (has_negative or has_complaint):
+            return {'level': 'Medium', 'color': '#f59e0b'}
+        if has_exclamation and word_count >= 5:
+            return {'level': 'Medium', 'color': '#f59e0b'}
+
         return {'level': 'Low', 'color': '#22c55e'}
 
     def analyze(self, text: str) -> Dict:

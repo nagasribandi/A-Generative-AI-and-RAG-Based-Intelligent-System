@@ -19,8 +19,23 @@ const CATEGORY_RULES = {
 };
 
 // Priority rules
-const HIGH_KEYWORDS = ['urgent', 'emergency', 'fire', 'danger', 'hazard', 'immediate', 'critical', 'severe', 'flood', 'collapse', 'injury', 'broken glass', 'electrocution', 'short circuit', 'theft', 'stolen'];
-const MEDIUM_KEYWORDS = ['broken', 'not working', 'damaged', 'leaking', 'malfunction', 'faulty', 'intermittent', 'slow', 'frequent', 'recurring'];
+const HIGH_KEYWORDS = ['urgent', 'emergency', 'fire', 'danger', 'hazard', 'immediate', 'critical', 'severe',
+  'flood', 'collapse', 'injury', 'broken glass', 'electrocution', 'short circuit', 'theft', 'stolen',
+  'life threatening', 'unconscious', 'accident', 'explosion', 'gas leak', 'live wire', 'sparking',
+  'attacked', 'assault', 'bleeding', 'trapped', 'stuck in elevator', 'smoke', 'toxic',
+  'structural damage', 'ceiling fell', 'wall crack', 'sinkhole', 'electric shock'];
+const MEDIUM_KEYWORDS = ['broken', 'not working', 'damaged', 'leaking', 'malfunction', 'faulty', 'intermittent',
+  'slow', 'frequent', 'recurring', 'problem', 'issue', 'trouble', 'complaint', 'poor', 'bad',
+  'fail', 'failed', 'failure', 'stuck', 'jammed', 'noisy', 'noise', 'vibration', 'flickering',
+  'erratic', 'inconsistent', 'unreliable', 'defective', 'worn out', 'rusted', 'corroded',
+  'cracked', 'chipped', 'peeling', 'stained', 'overflowing', 'clogged', 'blocked',
+  'overcrowded', 'insufficient', 'inadequate', 'missing', 'absent', 'unavailable',
+  'delayed', 'late', 'irregular', 'disruptive', 'affecting', 'hindering', 'preventing',
+  'unable to', 'cannot', "doesn't work", 'does not work', 'stopped working', 'out of order',
+  'need repair', 'needs fixing', 'please fix', 'help', 'seriously', 'very bad', 'terrible',
+  'horrible', 'disgusting', 'unbearable', 'unacceptable', 'pathetic', 'worst',
+  'since long', 'many days', 'weeks', 'no response', 'multiple times', 'again and again',
+  'still not', 'yet to be', 'pending', 'ignored', 'no action', 'several complaints'];
 
 // SOP Database for RAG
 const SOP_DATABASE = {
@@ -197,22 +212,36 @@ export function classifyComplaint(text) {
   const lower = text.toLowerCase();
   let bestCategory = 'Infrastructure';
   let bestScore = 0;
+  const allScores = {};
 
   for (const [category, keywords] of Object.entries(CATEGORY_RULES)) {
     let score = 0;
     for (const keyword of keywords) {
       if (lower.includes(keyword)) {
-        score += keyword.split(' ').length; // Multi-word matches score higher
+        score += keyword.split(' ').length;
       }
     }
+    allScores[category] = score;
     if (score > bestScore) {
       bestScore = score;
       bestCategory = category;
     }
   }
 
-  // Confidence calculation
-  const confidence = Math.min(95, 60 + bestScore * 8);
+  // Improved confidence formula with specificity and text length
+  const sortedScores = Object.values(allScores).sort((a, b) => b - a);
+  const secondBest = sortedScores[1] || 0;
+  const gap = bestScore - secondBest;
+
+  let confidence;
+  if (bestScore === 0) {
+    confidence = 55;
+  } else {
+    const keywordContrib = Math.min(20, bestScore * 5);
+    const specificityBonus = Math.min(10, gap * 4);
+    const textLengthBonus = Math.min(5, Math.floor(text.split(' ').length / 10));
+    confidence = Math.min(96, 62 + keywordContrib + specificityBonus + textLengthBonus);
+  }
 
   return { category: bestCategory, confidence };
 }
@@ -220,12 +249,23 @@ export function classifyComplaint(text) {
 export function predictPriority(text) {
   const lower = text.toLowerCase();
   
-  for (const keyword of HIGH_KEYWORDS) {
-    if (lower.includes(keyword)) return { level: 'High', color: '#ef4444' };
-  }
-  for (const keyword of MEDIUM_KEYWORDS) {
-    if (lower.includes(keyword)) return { level: 'Medium', color: '#f59e0b' };
-  }
+  const highMatches = HIGH_KEYWORDS.filter(kw => lower.includes(kw)).length;
+  if (highMatches > 0) return { level: 'High', color: '#ef4444' };
+
+  const mediumMatches = MEDIUM_KEYWORDS.filter(kw => lower.includes(kw)).length;
+  if (mediumMatches > 0) return { level: 'Medium', color: '#f59e0b' };
+
+  // Contextual signals
+  const wordCount = text.split(' ').length;
+  const hasExclamation = text.includes('!');
+  const negativeWords = ['not', 'no', 'never', 'nothing', "don't", "doesn't", "won't", "can't", "couldn't", "isn't", "aren't"];
+  const hasNegative = negativeWords.some(w => lower.includes(w));
+  const complaintWords = ['need', 'want', 'require', 'request', 'fix', 'resolve', 'address', 'attend', 'look into', 'kindly', 'please', 'asap', 'soon', 'quickly'];
+  const hasComplaint = complaintWords.some(w => lower.includes(w));
+
+  if (wordCount >= 8 && (hasNegative || hasComplaint)) return { level: 'Medium', color: '#f59e0b' };
+  if (hasExclamation && wordCount >= 5) return { level: 'Medium', color: '#f59e0b' };
+
   return { level: 'Low', color: '#22c55e' };
 }
 
