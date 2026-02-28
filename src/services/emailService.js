@@ -130,7 +130,7 @@ export async function getAdminEmails() {
 // Send notification to admin when a new user signs up
 export async function sendNewUserNotification(newUser) {
   // Always notify the site admin directly (localStorage may not have admin on new user's browser)
-  const ADMIN_EMAIL = 'araveenpipavath@gmail.com';
+  const ADMIN_EMAIL = 'samrtcampusdetection@gmail.com';
 
   const result = await sendViaBackend(
     ADMIN_EMAIL,

@@ -2,9 +2,9 @@
 // Sends email via Nodemailer + Gmail SMTP
 const nodemailer = require('nodemailer');
 
-const SMTP_USER = process.env.SMTP_USER || 'araveenpipavath@gmail.com';
-const SMTP_PASS = process.env.SMTP_PASS || 'yhvqijbuvvdibyqn';
-const SMTP_FROM = process.env.SMTP_FROM || '"Smart Campus Detection" <araveenpipavath@gmail.com>';
+const SMTP_USER = process.env.SMTP_USER || 'samrtcampusdetection@gmail.com';
+const SMTP_PASS = process.env.SMTP_PASS || 'yprotdhqyidgfpgq';
+const SMTP_FROM = process.env.SMTP_FROM || '"Smart Campus Detection" <samrtcampusdetection@gmail.com>';
 const ADMIN_KEY = process.env.ADMIN_API_KEY || 'dev-admin-key';
 
 let transporter = null;
