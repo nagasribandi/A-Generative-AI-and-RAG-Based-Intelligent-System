@@ -43,13 +43,7 @@ export function AuthProvider({ children }) {
     if (!found || found.password !== password) {
       throw new Error('Invalid email or password');
     }
-    // Block login for students whose account is not yet approved by admin
-    if (found.role !== 'admin' && !found.approved) {
-      if (found.rejected) {
-        throw new Error('Your signup request was rejected by the admin. Please contact the institution.');
-      }
-      throw new Error('Your account is pending admin approval. You will receive an email once approved.');
-    }
+    // Approval check disabled — users can login immediately after OTP-verified signup
     setUser(found);
     localStorage.setItem(SESSION_KEY, JSON.stringify({ id: found.id }));
     return found;
@@ -73,11 +67,13 @@ export function AuthProvider({ children }) {
       studentId: userData.studentId,
       phone: userData.phone || '',
       emailVerified: userData.emailVerified || false,
-      approved: false,
+      approved: true,
       rejected: false,
       createdAt: new Date().toISOString()
     });
-    // Do NOT auto-login. Admin must approve account.
+    // Auto-login after OTP-verified signup (no admin approval needed)
+    setUser(newUser);
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ id: newUser.id }));
     return newUser;
   };
 

@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
 import { FiUser, FiMail, FiLock, FiEye, FiEyeOff, FiShield, FiPhone, FiBookOpen, FiHash, FiAlertCircle, FiCheckCircle, FiInfo } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
-import { generateOTP, storeOTP, verifyOTP, sendOTPEmail, sendNewUserNotification } from '../services/emailService';
+import { generateOTP, storeOTP, verifyOTP, sendOTPEmail } from '../services/emailService';
 import { validateRollNumber, validateStudentName, validateDepartmentMatch, checkDuplicateRoll, getValidDepartments, getDepartmentFromRoll } from '../services/studentValidation';
 import '../styles/auth.css';
 
@@ -188,20 +188,14 @@ export default function Signup() {
     }
     setLoading(true);
     try {
-      const newUser = await signup({
+      await signup({
         ...formData,
         role: 'student', // ALWAYS student — admin signup is restricted
         studentId: formData.studentId.toUpperCase(),
         emailVerified: true
       });
-      // Notify admins of a pending signup
-      try {
-        await sendNewUserNotification(newUser);
-      } catch (err) {
-        console.error('Failed to notify admins:', err);
-      }
-      toast.success('Registered! Your account is pending admin approval. You will receive an email when approved.');
-      navigate('/login');
+      toast.success('Registration successful! Welcome to SmartCampus! 🎉');
+      navigate('/dashboard');
     } catch (err) {
       toast.error(err.message);
     } finally {
