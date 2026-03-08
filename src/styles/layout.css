@@ -242,6 +242,8 @@
   font-weight: 500;
 }
 
+[data-theme="dark"] .topbar-role-badge { background: rgba(255, 255, 255, 0.06); }
+
 .page-content {
   padding: 2rem;
 }

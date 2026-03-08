@@ -141,6 +141,11 @@
   .analytics-grid { grid-template-columns: 1fr; }
 }
 
+/* Dark theme */
+[data-theme="dark"] .kpi-card { background: var(--card-bg); border-color: var(--card-border); }
+[data-theme="dark"] .analytics-card { background: var(--card-bg); border-color: var(--card-border); }
+[data-theme="dark"] .analytics-table tbody tr:hover { background: rgba(99, 102, 241, 0.08); }
+
 @media (max-width: 768px) {
   .kpi-grid { grid-template-columns: 1fr; }
 }

@@ -154,3 +154,12 @@
 }
 
 .btn-cancel:hover { background: #e2e8f0; }
+
+/* Dark theme */
+[data-theme="dark"] .profile-card { background: var(--card-bg); border-color: var(--card-border); }
+[data-theme="dark"] .detail-row { border-bottom-color: var(--border); }
+[data-theme="dark"] .detail-row input { background: var(--bg-page); color: var(--text-primary); border-color: var(--border); }
+[data-theme="dark"] .role-badge.admin { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+[data-theme="dark"] .role-badge.student { background: rgba(99, 102, 241, 0.15); color: #a5b4fc; }
+[data-theme="dark"] .btn-cancel { background: #1e293b; color: var(--text-secondary); }
+[data-theme="dark"] .btn-cancel:hover { background: #334155; }

@@ -345,6 +345,24 @@
 .success-card p { color: var(--text-secondary); margin-bottom: 0.5rem; }
 .redirect-text { color: var(--text-light); font-style: italic; margin-top: 1rem !important; }
 
+/* Dark theme */
+[data-theme="dark"] .submit-form-section { background: var(--card-bg); border-color: var(--card-border); }
+[data-theme="dark"] .submit-form-section label { color: var(--text-secondary); }
+[data-theme="dark"] .submit-form-section input,
+[data-theme="dark"] .submit-form-section textarea,
+[data-theme="dark"] .submit-form-section select { background: var(--bg-page); border-color: var(--border); color: var(--text-primary); }
+[data-theme="dark"] .submit-form-section input:focus,
+[data-theme="dark"] .submit-form-section textarea:focus,
+[data-theme="dark"] .submit-form-section select:focus { background: var(--card-bg); }
+[data-theme="dark"] .ai-analysis-panel { background: var(--card-bg); border-color: var(--card-border); }
+[data-theme="dark"] .result-card { background: rgba(255, 255, 255, 0.04); }
+[data-theme="dark"] .confidence-badge { background: rgba(99, 102, 241, 0.15); }
+[data-theme="dark"] .confidence-bar { background: #1e293b; }
+[data-theme="dark"] .sop-list li { background: rgba(255, 255, 255, 0.04); }
+[data-theme="dark"] .action-plan-card { background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(34, 197, 94, 0.05)); border-color: rgba(34, 197, 94, 0.25); }
+[data-theme="dark"] .success-card { background: var(--card-bg); }
+[data-theme="dark"] .ai-source-badge.rule-based { background: rgba(255, 255, 255, 0.06); color: #94a3b8; border-color: var(--border); }
+
 /* Responsive */
 @media (max-width: 1024px) {
   .submit-layout { grid-template-columns: 1fr; }

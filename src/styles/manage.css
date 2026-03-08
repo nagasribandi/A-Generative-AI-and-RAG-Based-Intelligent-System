@@ -246,6 +246,20 @@
 
 .empty-state h3 { color: var(--text-primary); margin-bottom: 0.5rem; }
 
+/* Dark theme */
+[data-theme="dark"] .btn-refresh { background: var(--card-bg); border-color: var(--card-border); }
+[data-theme="dark"] .btn-refresh:hover { background: rgba(99, 102, 241, 0.1); }
+[data-theme="dark"] .search-box { background: var(--card-bg); border-color: var(--card-border); }
+[data-theme="dark"] .search-box input { color: var(--text-primary); }
+[data-theme="dark"] .filter-group select { background: var(--card-bg); border-color: var(--card-border); color: var(--text-primary); }
+[data-theme="dark"] .complaint-card { background: var(--card-bg); border-color: var(--card-border); }
+[data-theme="dark"] .complaint-card:hover { border-color: rgba(99, 102, 241, 0.3); }
+[data-theme="dark"] .confidence-tag { background: rgba(99, 102, 241, 0.15); }
+[data-theme="dark"] .btn-view { background: rgba(99, 102, 241, 0.15); }
+[data-theme="dark"] .status-menu { background: var(--card-bg); border-color: var(--card-border); }
+[data-theme="dark"] .status-menu button { color: var(--text-primary); }
+[data-theme="dark"] .status-menu button:hover { background: rgba(99, 102, 241, 0.1); }
+
 @media (max-width: 768px) {
   .filters-bar { flex-direction: column; }
   .filter-group { flex-wrap: wrap; }

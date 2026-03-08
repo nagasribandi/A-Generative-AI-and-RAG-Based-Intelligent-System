@@ -382,6 +382,22 @@
   line-height: 1.6;
 }
 
+/* Dark theme */
+[data-theme="dark"] .btn-back { background: var(--card-bg); border-color: var(--card-border); }
+[data-theme="dark"] .btn-back:hover { background: rgba(99, 102, 241, 0.1); }
+[data-theme="dark"] .complaint-id-badge { background: rgba(99, 102, 241, 0.15); }
+[data-theme="dark"] .detail-header { background: var(--card-bg); border-color: var(--card-border); }
+[data-theme="dark"] .admin-controls { background: var(--card-bg); border-color: var(--card-border); }
+[data-theme="dark"] .detail-tabs { background: var(--card-bg); border-color: var(--card-border); }
+[data-theme="dark"] .tab-btn:hover { background: rgba(99, 102, 241, 0.1); }
+[data-theme="dark"] .detail-content { background: var(--card-bg); border-color: var(--card-border); }
+[data-theme="dark"] .info-card { background: rgba(255, 255, 255, 0.04); }
+[data-theme="dark"] .ai-card { background: rgba(255, 255, 255, 0.04); }
+[data-theme="dark"] .confidence-bar-detail { background: #1e293b; }
+[data-theme="dark"] .step-content { background: rgba(255, 255, 255, 0.04); }
+[data-theme="dark"] .sop-card { background: rgba(255, 255, 255, 0.04); }
+[data-theme="dark"] .rag-note { background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(99, 102, 241, 0.06)); border-color: rgba(99, 102, 241, 0.25); color: var(--text-secondary); }
+
 /* Responsive */
 @media (max-width: 768px) {
   .detail-title-row { flex-direction: column; }

@@ -235,6 +235,13 @@
   .charts-grid { grid-template-columns: 1fr; }
 }
 
+/* Dark theme */
+[data-theme="dark"] .stat-card { background: var(--card-bg); border-color: var(--card-border); }
+[data-theme="dark"] .ai-insight-banner { background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(99, 102, 241, 0.08)); border-color: rgba(99, 102, 241, 0.25); }
+[data-theme="dark"] .ai-insight-banner .ai-text { color: var(--text-secondary); }
+[data-theme="dark"] .chart-card { background: var(--card-bg); border-color: var(--card-border); }
+[data-theme="dark"] .recent-section { background: var(--card-bg); border-color: var(--card-border); }
+
 @media (max-width: 768px) {
   .stats-grid { grid-template-columns: 1fr; }
   .dashboard-header { flex-direction: column; gap: 1rem; align-items: flex-start; }

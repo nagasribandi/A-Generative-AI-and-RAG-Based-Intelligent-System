@@ -601,6 +601,45 @@
 }
 
 /* ========================================
+   Light theme adaptation
+   ======================================== */
+[data-theme="light"] .heatmap-title-section h1 { color: var(--text-primary); }
+[data-theme="light"] .heatmap-title-section p { color: var(--text-secondary); }
+[data-theme="light"] .heatmap-status-filter { color: var(--text-primary); }
+[data-theme="light"] .heatmap-status-filter option { background: #fff; color: var(--text-primary); }
+[data-theme="light"] .qs-value { color: var(--text-primary); }
+[data-theme="light"] .qs-label { color: var(--text-secondary); }
+[data-theme="light"] .quick-stat { background: linear-gradient(135deg, rgba(99, 102, 241, 0.06), rgba(99, 102, 241, 0.02)); border-color: rgba(99, 102, 241, 0.12); }
+[data-theme="light"] .quick-stat.alert { background: linear-gradient(135deg, rgba(231, 76, 60, 0.06), rgba(231, 76, 60, 0.02)); border-color: rgba(231, 76, 60, 0.15); }
+[data-theme="light"] .quick-stat.danger { background: linear-gradient(135deg, rgba(243, 156, 18, 0.06), rgba(243, 156, 18, 0.02)); border-color: rgba(243, 156, 18, 0.15); }
+[data-theme="light"] .quick-stat.hotspot { background: linear-gradient(135deg, rgba(230, 126, 34, 0.06), rgba(230, 126, 34, 0.02)); border-color: rgba(230, 126, 34, 0.15); }
+[data-theme="light"] .heatmap-map-area { background: linear-gradient(135deg, #e2e8f0, #f1f5f9); border-color: var(--border); }
+[data-theme="light"] .heatmap-sidebar { background: linear-gradient(135deg, #f8fafc, #ffffff); border-color: var(--border); }
+[data-theme="light"] .zone-panel-header { background: #f8fafc; border-color: var(--border); }
+[data-theme="light"] .zone-panel-header h2 { color: var(--text-primary); }
+[data-theme="light"] .zs-count { color: var(--text-primary); }
+[data-theme="light"] .zs-label { color: var(--text-secondary); }
+[data-theme="light"] .zone-categories h3 { color: var(--text-secondary); }
+[data-theme="light"] .cat-name { color: var(--text-primary); }
+[data-theme="light"] .zone-complaints-list h3 { color: var(--text-secondary); }
+[data-theme="light"] .zone-complaint-card { background: rgba(0, 0, 0, 0.02); border-color: var(--border); }
+[data-theme="light"] .zone-complaint-card:hover { border-color: rgba(99, 102, 241, 0.3); background: rgba(99, 102, 241, 0.04); }
+[data-theme="light"] .zcc-title { color: var(--text-primary); }
+[data-theme="light"] .zcc-status { color: var(--text-secondary); }
+[data-theme="light"] .zcc-date { color: var(--text-secondary); }
+[data-theme="light"] .sidebar-placeholder-content h3 { color: var(--text-primary); }
+[data-theme="light"] .sidebar-placeholder-content p { color: var(--text-secondary); }
+[data-theme="light"] .placeholder-tips .tip { color: var(--text-secondary); background: rgba(0, 0, 0, 0.02); border-color: var(--border); }
+[data-theme="light"] .zone-stat { background: rgba(0, 0, 0, 0.02); border-color: var(--border); }
+[data-theme="light"] .zone-empty { color: var(--text-secondary); }
+[data-theme="light"] .zone-admin-insight p { color: var(--text-primary); }
+[data-theme="light"] .zone-admin-insight strong { color: var(--text-primary); }
+[data-theme="light"] .heatmap-legend { background: rgba(241, 245, 249, 0.9); }
+[data-theme="light"] .legend-title { color: var(--text-secondary); }
+[data-theme="light"] .legend-item { color: var(--text-primary); }
+[data-theme="light"] .heatmap-filter-bar { background: rgba(99, 102, 241, 0.06); border-color: rgba(99, 102, 241, 0.15); }
+
+/* ========================================
    Responsive Design
    ======================================== */
 @media (max-width: 1100px) {
