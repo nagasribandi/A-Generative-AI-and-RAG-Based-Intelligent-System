@@ -163,3 +163,36 @@ export async function sendSignupDecisionEmail(toEmail, toName, approved, adminNa
      <br><p>— Smart Campus AI System</p>`
   );
 }
+
+// Send complaint to department admin for forwarding
+export async function sendComplaintToDepartment(complaint, deptAdmin) {
+  return await sendViaBackend(
+    deptAdmin.email,
+    `🚨 Problem Detected — ${complaint.category}: ${complaint.title}`,
+    `<div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <div style="background: linear-gradient(135deg, #6366f1, #8b5cf6); padding: 24px; border-radius: 12px 12px 0 0;">
+        <h1 style="color: white; margin: 0; font-size: 20px;">🚨 Smart Campus — Problem Alert</h1>
+        <p style="color: #c7d2fe; margin: 8px 0 0; font-size: 14px;">A problem has been forwarded to your department</p>
+      </div>
+      <div style="background: #fff; padding: 24px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 12px 12px;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 16px;">
+          <tr><td style="padding: 8px 0; color: #64748b; width: 120px;"><b>Department:</b></td><td style="padding: 8px 0; color: #1e293b;">${deptAdmin.departmentType}</td></tr>
+          <tr><td style="padding: 8px 0; color: #64748b;"><b>Problem ID:</b></td><td style="padding: 8px 0; color: #6366f1; font-weight: 600;">${complaint.id}</td></tr>
+          <tr><td style="padding: 8px 0; color: #64748b;"><b>Category:</b></td><td style="padding: 8px 0; color: #1e293b;">${complaint.category}</td></tr>
+          <tr><td style="padding: 8px 0; color: #64748b;"><b>Priority:</b></td><td style="padding: 8px 0;"><span style="display:inline-block;padding:2px 12px;border-radius:12px;font-weight:600;font-size:12px;${complaint.priority === 'High' ? 'background:#fee2e2;color:#dc2626;' : complaint.priority === 'Medium' ? 'background:#fef3c7;color:#d97706;' : 'background:#dcfce7;color:#16a34a;'}">${complaint.priority}</span></td></tr>
+          <tr><td style="padding: 8px 0; color: #64748b;"><b>Location:</b></td><td style="padding: 8px 0; color: #1e293b;">📍 ${complaint.location}</td></tr>
+          <tr><td style="padding: 8px 0; color: #64748b;"><b>Reported by:</b></td><td style="padding: 8px 0; color: #1e293b;">${complaint.userName}</td></tr>
+          <tr><td style="padding: 8px 0; color: #64748b;"><b>Date:</b></td><td style="padding: 8px 0; color: #1e293b;">${new Date(complaint.createdAt).toLocaleString()}</td></tr>
+        </table>
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+          <h3 style="margin: 0 0 8px; font-size: 15px; color: #1e293b;">${complaint.title}</h3>
+          <p style="margin: 0; font-size: 14px; color: #475569; line-height: 1.5;">${complaint.description?.substring(0, 800) || 'No description provided.'}</p>
+        </div>
+        <p style="font-size: 13px; color: #64748b;">Dear <b>${deptAdmin.name}</b>, please take necessary action on this reported problem. Log in to the <a href="https://smartcampusdetection.vercel.app" style="color: #6366f1; font-weight: 600;">Smart Campus Portal</a> for more details.</p>
+        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 16px 0;">
+        <p style="font-size: 12px; color: #94a3b8; text-align: center;">— Smart Campus AI Detection System</p>
+      </div>
+    </div>`
+  );
+}
+

@@ -54,18 +54,20 @@ export function AuthProvider({ children }) {
     if (exists) {
       throw new Error('An account with this email already exists');
     }
-    // SECURITY: Force role to 'student' — admin accounts cannot be created via signup
+    // SECURITY: Only 'student' and 'staff' roles can be created via signup
     if (userData.role === 'admin') {
       throw new Error('Admin accounts cannot be created through signup. Contact your institution.');
     }
+    const role = userData.role === 'staff' ? 'staff' : 'student';
     const newUser = await fbCreateUser({
       name: userData.name,
       email: userData.email,
       password: userData.password,
-      role: 'student',
-      department: userData.department,
-      studentId: userData.studentId,
+      role: role,
+      department: userData.department || '',
+      studentId: userData.studentId || '',
       phone: userData.phone || '',
+      designation: userData.designation || '',
       emailVerified: userData.emailVerified || false,
       approved: true,
       rejected: false,

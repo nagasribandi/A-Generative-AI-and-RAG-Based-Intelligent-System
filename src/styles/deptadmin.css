@@ -1,0 +1,445 @@
+/* ===== DEPARTMENT ADMINS PAGE ===== */
+.dept-admin-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 0 2rem;
+}
+
+.dept-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.dept-header h1 {
+  font-size: 1.5rem;
+  margin: 0 0 4px;
+}
+
+.dept-header p {
+  color: #64748b;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.dept-header-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-refresh-dept {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-refresh-dept:hover {
+  background: #f8fafc;
+  color: #6366f1;
+  border-color: #6366f1;
+}
+
+.btn-add-dept {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 20px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-add-dept:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35);
+}
+
+/* Form Card */
+.dept-form-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+.dept-form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.2rem;
+}
+
+.dept-form-header h2 {
+  font-size: 1.1rem;
+  margin: 0;
+  color: #1e293b;
+}
+
+.btn-close-form {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.btn-close-form:hover {
+  color: #ef4444;
+  background: #fef2f2;
+}
+
+.dept-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.dept-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dept-form-group label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #374151;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dept-form-group input,
+.dept-form-group select {
+  padding: 10px 14px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  outline: none;
+  transition: all 0.2s;
+  background: #f8fafc;
+}
+
+.dept-form-group input:focus,
+.dept-form-group select:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  background: white;
+}
+
+.dept-form-group.error input,
+.dept-form-group.error select {
+  border-color: #ef4444;
+}
+
+.form-error {
+  color: #ef4444;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.dept-form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 1.2rem;
+}
+
+.btn-save-dept {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 24px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-save-dept:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+}
+
+.btn-cancel-dept {
+  padding: 10px 20px;
+  background: #f1f5f9;
+  color: #64748b;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-cancel-dept:hover {
+  background: #e2e8f0;
+}
+
+/* ===== Department Grid ===== */
+.dept-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 1.2rem;
+}
+
+.dept-group-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s;
+}
+
+.dept-group-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.dept-group-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  background: linear-gradient(135deg, #f8fafc, #eef2ff);
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.dept-group-icon {
+  font-size: 1.5rem;
+}
+
+.dept-group-header h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+  flex: 1;
+}
+
+.dept-count {
+  background: #6366f1;
+  color: white;
+  padding: 2px 10px;
+  border-radius: 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+/* Admin Card */
+.dept-admin-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  border-bottom: 1px solid #f1f5f9;
+  transition: all 0.2s;
+}
+
+.dept-admin-card:last-child {
+  border-bottom: none;
+}
+
+.dept-admin-card:hover {
+  background: #f8fafc;
+}
+
+.dac-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dac-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.dac-details h4 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 2px;
+}
+
+.dac-email,
+.dac-phone {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  color: #64748b;
+  margin: 0;
+}
+
+.dac-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.dac-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+  text-decoration: none;
+}
+
+.dac-btn-email {
+  background: #eef2ff;
+  color: #6366f1;
+}
+
+.dac-btn-email:hover {
+  background: #6366f1;
+  color: white;
+}
+
+.dac-btn-wa {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.dac-btn-wa:hover {
+  background: #16a34a;
+  color: white;
+}
+
+.dac-btn-edit {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.dac-btn-edit:hover {
+  background: #d97706;
+  color: white;
+}
+
+.dac-btn-delete {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+.dac-btn-delete:hover {
+  background: #ef4444;
+  color: white;
+}
+
+/* Empty State */
+.dept-empty {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: white;
+  border: 2px dashed #e2e8f0;
+  border-radius: 14px;
+}
+
+.dept-empty-icon {
+  font-size: 3rem;
+  margin-bottom: 0.8rem;
+}
+
+.dept-empty h3 {
+  font-size: 1.2rem;
+  color: #1e293b;
+  margin: 0 0 0.5rem;
+}
+
+.dept-empty p {
+  color: #64748b;
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Loading */
+.dept-loading {
+  text-align: center;
+  padding: 3rem;
+  color: #64748b;
+}
+
+.dept-loading .spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #6366f1;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+.spin { animation: spin360 1s linear infinite; }
+@keyframes spin360 { to { transform: rotate(360deg); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Dark Theme */
+[data-theme="dark"] .dept-form-card { background: #1e293b; border-color: #334155; }
+[data-theme="dark"] .dept-form-header h2 { color: #f1f5f9; }
+[data-theme="dark"] .dept-form-group label { color: #cbd5e1; }
+[data-theme="dark"] .dept-form-group input,
+[data-theme="dark"] .dept-form-group select { background: #0f172a; color: #e2e8f0; border-color: #334155; }
+[data-theme="dark"] .dept-group-card { background: #1e293b; border-color: #334155; }
+[data-theme="dark"] .dept-group-header { background: linear-gradient(135deg, #0f172a, #1e293b); border-color: #334155; }
+[data-theme="dark"] .dept-group-header h3 { color: #f1f5f9; }
+[data-theme="dark"] .dept-admin-card { border-color: #1e293b; }
+[data-theme="dark"] .dept-admin-card:hover { background: #0f172a; }
+[data-theme="dark"] .dac-details h4 { color: #f1f5f9; }
+[data-theme="dark"] .dac-email,
+[data-theme="dark"] .dac-phone { color: #94a3b8; }
+[data-theme="dark"] .dept-header p { color: #94a3b8; }
+[data-theme="dark"] .btn-refresh-dept { background: #1e293b; border-color: #334155; color: #94a3b8; }
+[data-theme="dark"] .btn-cancel-dept { background: #334155; color: #cbd5e1; }
+[data-theme="dark"] .dept-empty { background: #1e293b; border-color: #334155; }
+[data-theme="dark"] .dept-empty h3 { color: #f1f5f9; }
+[data-theme="dark"] .dept-empty p { color: #94a3b8; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .dept-header { flex-direction: column; }
+  .dept-header-actions { width: 100%; }
+  .dept-form-grid { grid-template-columns: 1fr; }
+  .dept-grid { grid-template-columns: 1fr; }
+  .dept-admin-card { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .dac-actions { align-self: flex-end; }
+}

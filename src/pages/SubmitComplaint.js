@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
@@ -6,9 +6,36 @@ import { saveComplaint } from '../services/aiEngine';
 import { pyFullAnalysis, pyClassifyComplaint, pyPredictPriority, pyGenerateRAGResponse, pyGenerateAISummary } from '../services/pythonAiService';
 import { sendUrgentComplaintEmail } from '../services/emailService';
 import { awardPoints } from '../services/gamification';
-import { FiSend, FiCpu, FiMapPin, FiFileText, FiAlertTriangle, FiCheckCircle, FiLoader, FiMail, FiZap } from 'react-icons/fi';
+import { FiSend, FiCpu, FiMapPin, FiFileText, FiAlertTriangle, FiCheckCircle, FiLoader, FiMail, FiZap, FiMic, FiMicOff } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import '../styles/submit.css';
+
+// Gemini API for voice translation + form extraction
+const GEMINI_API_KEY = process.env.REACT_APP_GEMINI_API_KEY || '';
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+
+async function callGeminiForVoice(prompt) {
+  if (!GEMINI_API_KEY || GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY_HERE') {
+    throw new Error('Gemini API key not configured');
+  }
+  const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.2, maxOutputTokens: 1024 },
+      safetySettings: [
+        { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
+        { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
+        { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
+        { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' }
+      ]
+    })
+  });
+  if (!response.ok) throw new Error('Gemini API error');
+  const data = await response.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+}
 
 export default function SubmitComplaint() {
   const { user } = useAuth();
@@ -25,6 +52,12 @@ export default function SubmitComplaint() {
   const [submitted, setSubmitted] = useState(false);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+
+  // ===== VOICE ASSISTANT STATE =====
+  const [isListening, setIsListening] = useState(false);
+  const [voiceText, setVoiceText] = useState('');
+  const [voiceProcessing, setVoiceProcessing] = useState(false);
+  const recognitionRef = useRef(null);
 
   const locations = [
     'Block 1 - Ground Floor',
@@ -59,17 +92,14 @@ export default function SubmitComplaint() {
   const updateField = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     setErrors(prev => ({ ...prev, [field]: '' }));
-    // Reset AI analysis when text changes
     if (field === 'description' && aiAnalysis) {
       setAiAnalysis(null);
     }
   };
 
-  // Handle optional image upload and convert to base64
   const handleFileChange = (e) => {
     const f = e.target.files[0];
     if (!f) return;
-    // limit ~3.5MB to be safe
     const maxBytes = 3.5 * 1024 * 1024;
     if (f.size > maxBytes) {
       toast.error('Image too large. Please upload an image smaller than 3.5 MB');
@@ -94,6 +124,124 @@ export default function SubmitComplaint() {
     return Object.keys(errs).length === 0;
   };
 
+  // ===== VOICE ASSISTANT LOGIC =====
+  const startListening = useCallback(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast.error('Speech recognition is not supported in your browser. Please use Chrome.');
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    // Hint to browser to listen for Indian accents/languages
+    recognition.lang = 'hi-IN'; 
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+
+    let finalTranscript = '';
+
+    recognition.onresult = (event) => {
+      let interim = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0]?.transcript || '';
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript + ' ';
+        } else {
+          interim += transcript;
+        }
+      }
+      setVoiceText(finalTranscript + interim);
+    };
+
+    recognition.onerror = (event) => {
+      console.error('Speech recognition error:', event.error);
+      if (event.error === 'not-allowed') {
+        toast.error('Microphone access denied. Please allow microphone permission.');
+      } else if (event.error !== 'aborted') {
+        toast.error('Voice recognition error: ' + event.error);
+      }
+      setIsListening(false);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsListening(true);
+    setVoiceText('');
+    toast.info('🎙️ Listening... Speak in any language');
+  }, []);
+
+  const stopListening = useCallback(() => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+    }
+    setIsListening(false);
+  }, []);
+
+  // Process voice text with Gemini AI — translate + extract complaint details
+  const processVoiceWithAI = async () => {
+    if (!voiceText.trim()) {
+      toast.warning('No speech detected. Please speak and try again.');
+      return;
+    }
+
+    setVoiceProcessing(true);
+
+    try {
+      const prompt = `You are a smart assistant for a college campus complaint system.
+
+A user has spoken (possibly in Hindi, Telugu, Tamil, Kannada, Marathi, Bengali, Urdu, or any other Indian language, or English). Their speech has been transcribed as:
+"${voiceText}"
+
+Your job:
+1. Translate the speech to clear, proper English
+2. Understand the complaint/problem they described
+3. Generate a short title (5-10 words) for the complaint
+4. Generate a detailed English description (2-4 sentences) of the complaint
+5. Try to identify the location from their speech. Match it to one of these campus locations if possible: ${locations.join(', ')}. If no match, return "Other".
+
+IMPORTANT: The transcription may be messy or in mixed language. Use your best understanding.
+
+Respond in EXACTLY this JSON format, nothing else:
+{
+  "translatedText": "Full English translation of what they said",
+  "title": "Short complaint title",
+  "description": "Detailed English description of the problem",
+  "location": "Best matching location or Other"
+}`;
+
+      const raw = await callGeminiForVoice(prompt);
+      const jsonMatch = raw.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error('Could not parse AI response');
+
+      const parsed = JSON.parse(jsonMatch[0]);
+
+      // Auto-fill the form
+      setFormData({
+        title: parsed.title || '',
+        description: parsed.description || parsed.translatedText || '',
+        location: locations.includes(parsed.location) ? parsed.location : ''
+      });
+
+      setAiAnalysis(null); // Reset so user must re-analyze
+      toast.success('✅ Voice translated & form filled by AI!');
+    } catch (err) {
+      console.error('Voice AI processing error:', err);
+      // Fallback: just put raw text in description
+      setFormData(prev => ({
+        ...prev,
+        description: prev.description + (prev.description ? '\n' : '') + voiceText
+      }));
+      toast.warning('AI translation unavailable. Raw speech text added to description.');
+    }
+
+    setVoiceProcessing(false);
+  };
+
   const handleAnalyze = async () => {
     if (!formData.description.trim() || formData.description.trim().length < 10) {
       toast.warning('Please enter a more detailed description for AI analysis');
@@ -103,9 +251,7 @@ export default function SubmitComplaint() {
     setAnalyzing(true);
 
     try {
-      // Call Python AI backend for full analysis (Gemini + rule-based fallback)
       toast.info('🐍 Running Python AI analysis...', { autoClose: 2000 });
-      
       const result = await pyFullAnalysis(formData.description);
 
       setAiAnalysis({
@@ -114,7 +260,7 @@ export default function SubmitComplaint() {
         priority: result.priority,
         ragResponse: result.ragResponse,
         summary: result.summary,
-        aiSource: result.source // 'gemini', 'hybrid', or 'rule-based'
+        aiSource: result.source
       });
 
       if (result.source === 'gemini') {
@@ -126,7 +272,6 @@ export default function SubmitComplaint() {
       }
     } catch (error) {
       console.error('Python AI Backend error, using client fallback:', error);
-      // Fallback: call individual Python endpoints
       try {
         const classification = await pyClassifyComplaint(formData.description);
         const priority = await pyPredictPriority(formData.description);
@@ -184,13 +329,11 @@ export default function SubmitComplaint() {
 
   await saveComplaint(complaint);
 
-    // Award gamification points for submitting a complaint
     const pointsResult = awardPoints(user.id, user.name, 'SUBMIT_COMPLAINT', complaint.id);
     if (complaint.priority === 'High') {
       awardPoints(user.id, user.name, 'HIGH_PRIORITY_REPORT', complaint.id);
     }
     
-    // Send urgent email to admins if complaint is High priority
     if (complaint.priority === 'High') {
       const emailResult = await sendUrgentComplaintEmail(complaint);
       if (emailResult.success) {
@@ -241,6 +384,72 @@ export default function SubmitComplaint() {
       <div className="submit-layout">
         {/* Form Section */}
         <div className="submit-form-section">
+          {/* ===== VOICE ASSISTANT — DIRECT MIC ===== */}
+          <div className="voice-section">
+            <div className="voice-row">
+              <button
+                type="button"
+                className={`btn-voice-mic ${isListening ? 'listening' : ''}`}
+                onClick={isListening ? stopListening : startListening}
+                disabled={voiceProcessing}
+              >
+                <div className={`mic-ring ${isListening ? 'active' : ''}`}>
+                  {isListening ? <FiMicOff /> : <FiMic />}
+                </div>
+              </button>
+              <div className="voice-info">
+                <span className="voice-title">
+                  {isListening ? '🔴 Listening... Speak now' : voiceProcessing ? '⏳ AI processing...' : '🎙️ Voice Assistant'}
+                </span>
+                <span className="voice-subtitle">
+                  {isListening
+                    ? 'Speak in any language — tap mic to stop'
+                    : voiceText && !voiceProcessing
+                    ? 'Speech captured! Click "Translate & Fill" below'
+                    : 'Tap the mic and speak your complaint in any language'}
+                </span>
+              </div>
+              {isListening && (
+                <div className="listening-indicator">
+                  <span className="pulse-dot"></span>
+                  <span className="pulse-dot"></span>
+                  <span className="pulse-dot"></span>
+                </div>
+              )}
+            </div>
+
+            {/* Live Transcript */}
+            <AnimatePresence>
+              {voiceText && (
+                <motion.div
+                  className="voice-transcript"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                >
+                  <label>What we heard:</label>
+                  <div className="transcript-text">{voiceText}</div>
+
+                  {/* Process Button — visible after speech stops */}
+                  {!isListening && (
+                    <button
+                      type="button"
+                      className="btn-process-voice"
+                      onClick={processVoiceWithAI}
+                      disabled={voiceProcessing}
+                    >
+                      {voiceProcessing ? (
+                        <><FiLoader className="spin" /> AI is translating & filling form...</>
+                      ) : (
+                        <><FiCpu /> Translate & Fill Form with AI</>
+                      )}
+                    </button>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
           <form onSubmit={handleSubmit} noValidate>
             <div className={`form-group ${errors.title ? 'error' : ''}`}>
               <label>Complaint Title</label>

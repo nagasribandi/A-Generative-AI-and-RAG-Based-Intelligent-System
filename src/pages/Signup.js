@@ -2,13 +2,16 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
-import { FiUser, FiMail, FiLock, FiEye, FiEyeOff, FiShield, FiPhone, FiBookOpen, FiHash, FiAlertCircle, FiCheckCircle, FiInfo } from 'react-icons/fi';
+import { FiUser, FiMail, FiLock, FiEye, FiEyeOff, FiShield, FiPhone, FiBookOpen, FiHash, FiAlertCircle, FiCheckCircle, FiInfo, FiBriefcase } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import { generateOTP, storeOTP, verifyOTP, sendOTPEmail } from '../services/emailService';
 import { validateRollNumber, validateStudentName, validateDepartmentMatch, checkDuplicateRoll, getValidDepartments, getDepartmentFromRoll } from '../services/studentValidation';
 import '../styles/auth.css';
 
 export default function Signup() {
+  // ===== ACCOUNT TYPE: 'student' or 'staff' =====
+  const [accountType, setAccountType] = useState(null); // null = selection screen
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -16,12 +19,13 @@ export default function Signup() {
     confirmPassword: '',
     department: '',
     studentId: '',
-    phone: ''
+    phone: '',
+    designation: '' // staff only
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
-  const [step, setStep] = useState(1); // 1: Account, 2: College Info, 3: OTP Verification
+  const [step, setStep] = useState(1);
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [otpSent, setOtpSent] = useState(false); // eslint-disable-line no-unused-vars
   const [otpLoading, setOtpLoading] = useState(false);
@@ -35,6 +39,9 @@ export default function Signup() {
 
   const departments = getValidDepartments();
 
+  // Total steps: student = 3, staff = 2
+  const totalSteps = accountType === 'student' ? 3 : 2;
+
   // OTP Timer countdown
   useEffect(() => {
     if (otpTimer > 0) {
@@ -43,22 +50,22 @@ export default function Signup() {
     }
   }, [otpTimer]);
 
-  // Auto-set department from roll number
+  // Auto-set department from roll number (student only)
   useEffect(() => {
-    if (formData.studentId.length >= 8) {
+    if (accountType === 'student' && formData.studentId.length >= 8) {
       const dept = getDepartmentFromRoll(formData.studentId);
       if (dept) {
         setFormData(prev => ({ ...prev, department: dept }));
         setDeptMatch({ valid: true, message: `Auto-detected: ${dept}` });
       }
     }
-  }, [formData.studentId]);
+  }, [formData.studentId, accountType]);
 
   const updateField = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     setErrors(prev => ({ ...prev, [field]: '' }));
 
-    // Live validation for roll number
+    // Live validation for roll number (student only)
     if (field === 'studentId' && value.length > 0) {
       const result = validateRollNumber(value);
       setRollValidation(result);
@@ -76,17 +83,21 @@ export default function Signup() {
       setNameValidation(null);
     }
 
-    // Department match check
+    // Department match check (student only)
     if (field === 'department' && formData.studentId) {
       setDeptMatch(validateDepartmentMatch(formData.studentId, value));
     }
   };
 
-  // ===== STEP 1 VALIDATION =====
+  // ===== STEP 1 VALIDATION (Account Details — shared) =====
   const validateStep1 = () => {
     const errs = {};
-    const nameResult = validateStudentName(formData.name);
-    if (!nameResult.valid) errs.name = nameResult.message;
+    if (accountType === 'student') {
+      const nameResult = validateStudentName(formData.name);
+      if (!nameResult.valid) errs.name = nameResult.message;
+    } else {
+      if (!formData.name || formData.name.trim().length < 2) errs.name = 'Name is required (min 2 characters)';
+    }
     if (!formData.email) errs.email = 'Email is required';
     else if (!/\S+@\S+\.\S+/.test(formData.email)) errs.email = 'Invalid email format';
     if (!formData.password) errs.password = 'Password is required';
@@ -97,8 +108,8 @@ export default function Signup() {
     return Object.keys(errs).length === 0;
   };
 
-  // ===== STEP 2 VALIDATION =====
-  const validateStep2 = async () => {
+  // ===== STEP 2 VALIDATION (College Info — student only) =====
+  const validateStep2Student = async () => {
     const errs = {};
     const rollResult = validateRollNumber(formData.studentId);
     if (!rollResult.valid) {
@@ -117,12 +128,19 @@ export default function Signup() {
   };
 
   // ===== NAVIGATION =====
-  const handleNext1 = () => {
-    if (validateStep1()) setStep(2);
+  const handleNext1 = async () => {
+    if (!validateStep1()) return;
+    if (accountType === 'student') {
+      setStep(2);
+    } else {
+      // Staff: skip college info, go straight to OTP
+      await handleSendOTP();
+      setStep(2); // step 2 for staff = OTP
+    }
   };
 
-  const handleNext2 = async () => {
-    if (!(await validateStep2())) return;
+  const handleNext2Student = async () => {
+    if (!(await validateStep2Student())) return;
     await handleSendOTP();
     setStep(3);
   };
@@ -188,12 +206,19 @@ export default function Signup() {
     }
     setLoading(true);
     try {
-      await signup({
+      const signupData = {
         ...formData,
-        role: 'student', // ALWAYS student — admin signup is restricted
-        studentId: formData.studentId.toUpperCase(),
+        role: accountType === 'student' ? 'student' : 'staff',
         emailVerified: true
-      });
+      };
+      if (accountType === 'student') {
+        signupData.studentId = formData.studentId.toUpperCase();
+      } else {
+        // Staff doesn't need studentId
+        signupData.studentId = '';
+        signupData.designation = formData.designation || '';
+      }
+      await signup(signupData);
       toast.success('Registration successful! Welcome to SmartCampus! 🎉');
       navigate('/dashboard');
     } catch (err) {
@@ -224,6 +249,122 @@ export default function Signup() {
 
   const strength = getPasswordStrength();
 
+  // ===== RESET on account type change =====
+  const selectAccountType = (type) => {
+    setAccountType(type);
+    setStep(1);
+    setErrors({});
+    setFormData({
+      name: '', email: '', password: '', confirmPassword: '',
+      department: '', studentId: '', phone: '', designation: ''
+    });
+    setOtp(['', '', '', '', '', '']);
+    setRollValidation(null);
+    setNameValidation(null);
+    setDeptMatch(null);
+  };
+
+  // ===== ACCOUNT TYPE SELECTION SCREEN =====
+  if (accountType === null) {
+    return (
+      <div className="auth-page">
+        <div className="auth-bg-shapes">
+          <div className="shape shape-1"></div>
+          <div className="shape shape-2"></div>
+          <div className="shape shape-3"></div>
+        </div>
+
+        <motion.div
+          className="auth-container signup-container account-type-select-container"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <div className="auth-left">
+            <div className="auth-left-content">
+              <FiShield className="auth-logo-icon" />
+              <h2>Join SmartCampus</h2>
+              <p>Create your account to report and track campus issues efficiently</p>
+              <div className="auth-features-list">
+                <div className="auth-feature-item">
+                  <span className="feature-dot"></span>
+                  OTP-verified email registration
+                </div>
+                <div className="auth-feature-item">
+                  <span className="feature-dot"></span>
+                  AI-powered issue classification
+                </div>
+                <div className="auth-feature-item">
+                  <span className="feature-dot"></span>
+                  Track resolution progress
+                </div>
+                <div className="auth-feature-item">
+                  <span className="feature-dot"></span>
+                  Open to students & campus staff
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="auth-right">
+            <div className="auth-form-wrapper">
+              <h1>Choose Account Type</h1>
+              <p className="auth-subtitle">Select the type of account you want to create</p>
+
+              <div className="account-type-cards">
+                <motion.button
+                  className="account-type-card"
+                  onClick={() => selectAccountType('student')}
+                  whileHover={{ scale: 1.03, y: -4 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <div className="atc-icon student-icon">🎓</div>
+                  <h3>Student Account</h3>
+                  <p>For enrolled students with a valid college Roll Number</p>
+                  <ul className="atc-features">
+                    <li><FiCheckCircle /> Roll number validated</li>
+                    <li><FiCheckCircle /> Department auto-detected</li>
+                    <li><FiCheckCircle /> OTP email verification</li>
+                  </ul>
+                  <span className="atc-btn">Create Student Account →</span>
+                </motion.button>
+
+                <motion.button
+                  className="account-type-card staff-card"
+                  onClick={() => selectAccountType('staff')}
+                  whileHover={{ scale: 1.03, y: -4 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <div className="atc-icon staff-icon">🏢</div>
+                  <h3>Campus Staff Account</h3>
+                  <p>For faculty, staff & campus workers who need to report issues</p>
+                  <ul className="atc-features">
+                    <li><FiCheckCircle /> Email & name required</li>
+                    <li><FiCheckCircle /> Designation optional</li>
+                    <li><FiCheckCircle /> OTP email verification</li>
+                  </ul>
+                  <span className="atc-btn staff-btn">Create Staff Account →</span>
+                </motion.button>
+              </div>
+
+              <p className="auth-switch">
+                Already have an account? <Link to="/login">Sign In</Link>
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // ===== MAIN SIGNUP FORM =====
+  const stepLabel = accountType === 'student'
+    ? (step === 1 ? 'Account Details' : step === 2 ? 'College Information' : 'Email Verification')
+    : (step === 1 ? 'Account Details' : 'Email Verification');
+
+  // Determine if current step is OTP step
+  const isOtpStep = accountType === 'student' ? step === 3 : step === 2;
+
   return (
     <div className="auth-page">
       <div className="auth-bg-shapes">
@@ -232,7 +373,7 @@ export default function Signup() {
         <div className="shape shape-3"></div>
       </div>
 
-      <motion.div 
+      <motion.div
         className="auth-container signup-container"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -242,16 +383,28 @@ export default function Signup() {
           <div className="auth-left-content">
             <FiShield className="auth-logo-icon" />
             <h2>Join SmartCampus</h2>
-            <p>Create your student account to report and track campus issues</p>
+            <p>
+              {accountType === 'student'
+                ? 'Create your student account to report and track campus issues'
+                : 'Create your campus staff account to report and track issues'}
+            </p>
             <div className="auth-features-list">
               <div className="auth-feature-item">
                 <span className="feature-dot"></span>
                 OTP-verified email registration
               </div>
-              <div className="auth-feature-item">
-                <span className="feature-dot"></span>
-                College ID validated enrollment
-              </div>
+              {accountType === 'student' && (
+                <div className="auth-feature-item">
+                  <span className="feature-dot"></span>
+                  College ID validated enrollment
+                </div>
+              )}
+              {accountType === 'staff' && (
+                <div className="auth-feature-item">
+                  <span className="feature-dot"></span>
+                  Quick staff registration
+                </div>
+              )}
               <div className="auth-feature-item">
                 <span className="feature-dot"></span>
                 AI-powered issue classification
@@ -265,33 +418,41 @@ export default function Signup() {
             <div className="auth-notice">
               <FiAlertCircle />
               <div>
-                <strong>Students Only</strong>
-                <p>Only student accounts can be created here. Admin accounts are managed by the institution.</p>
+                <strong>{accountType === 'student' ? '🎓 Student Signup' : '🏢 Staff Signup'}</strong>
+                <p>
+                  {accountType === 'student'
+                    ? 'Only student accounts can be created here. Admin accounts are managed by the institution.'
+                    : 'Campus staff accounts for faculty and workers. Admin accounts are managed separately.'}
+                </p>
               </div>
             </div>
+
+            <button className="btn-change-type" onClick={() => setAccountType(null)}>
+              ← Change Account Type
+            </button>
           </div>
         </div>
 
         <div className="auth-right">
           <div className="auth-form-wrapper">
-            <h1>Create Student Account</h1>
-            <p className="auth-subtitle">Step {step} of 3 — {step === 1 ? 'Account Details' : step === 2 ? 'College Information' : 'Email Verification'}</p>
+            <h1>{accountType === 'student' ? 'Create Student Account' : 'Create Staff Account'}</h1>
+            <p className="auth-subtitle">Step {step} of {totalSteps} — {stepLabel}</p>
 
             {/* Progress Bar */}
             <div className="signup-progress">
               <div className="progress-bar">
-                <div className="progress-fill" style={{ width: `${(step / 3) * 100}%` }}></div>
+                <div className="progress-fill" style={{ width: `${(step / totalSteps) * 100}%` }}></div>
               </div>
               <div className="progress-steps">
-                <span className={`progress-step ${step >= 1 ? 'active' : ''}`}>1</span>
-                <span className={`progress-step ${step >= 2 ? 'active' : ''}`}>2</span>
-                <span className={`progress-step ${step >= 3 ? 'active' : ''}`}>3</span>
+                {Array.from({ length: totalSteps }, (_, i) => (
+                  <span key={i} className={`progress-step ${step >= i + 1 ? 'active' : ''}`}>{i + 1}</span>
+                ))}
               </div>
             </div>
 
             <form onSubmit={handleSubmit} className="auth-form" noValidate>
               <AnimatePresence mode="wait">
-              {/* ===== STEP 1: Account Details ===== */}
+              {/* ===== STEP 1: Account Details (shared) ===== */}
               {step === 1 && (
                 <motion.div
                   key="step1"
@@ -302,26 +463,28 @@ export default function Signup() {
                 >
                   {/* Name Field */}
                   <div className={`form-group ${errors.name ? 'error' : ''}`}>
-                    <label>Full Name <span className="label-hint">(as on College ID Card)</span></label>
+                    <label>Full Name {accountType === 'student' && <span className="label-hint">(as on College ID Card)</span>}</label>
                     <div className="input-wrapper">
                       <FiUser className="input-icon" />
                       <input
                         type="text"
-                        placeholder="e.g., john wick"
+                        placeholder={accountType === 'student' ? 'e.g., John Wick' : 'e.g., Dr. Smith'}
                         value={formData.name}
                         onChange={(e) => updateField('name', e.target.value)}
                       />
-                      {nameValidation && (
+                      {nameValidation && accountType === 'student' && (
                         <span className={`validation-indicator ${nameValidation.valid ? 'valid' : 'invalid'}`}>
                           {nameValidation.valid ? <FiCheckCircle /> : <FiAlertCircle />}
                         </span>
                       )}
                     </div>
                     {errors.name && <span className="error-text">{errors.name}</span>}
-                    {!errors.name && nameValidation && !nameValidation.valid && (
+                    {!errors.name && nameValidation && !nameValidation.valid && accountType === 'student' && (
                       <span className="warning-text"><FiInfo size={12} /> {nameValidation.message}</span>
                     )}
-                    <span className="field-hint">Enter your full name exactly as it appears on your college ID card</span>
+                    {accountType === 'student' && (
+                      <span className="field-hint">Enter your full name exactly as it appears on your college ID card</span>
+                    )}
                   </div>
 
                   {/* Email Field */}
@@ -339,6 +502,40 @@ export default function Signup() {
                     {errors.email && <span className="error-text">{errors.email}</span>}
                     <span className="field-hint">An OTP will be sent to verify this email</span>
                   </div>
+
+                  {/* Designation (Staff Only) */}
+                  {accountType === 'staff' && (
+                    <div className="form-group">
+                      <label>Designation <span className="label-hint">(Optional)</span></label>
+                      <div className="input-wrapper">
+                        <FiBriefcase className="input-icon" />
+                        <input
+                          type="text"
+                          placeholder="e.g., Professor, Lab Assistant, Security"
+                          value={formData.designation}
+                          onChange={(e) => updateField('designation', e.target.value)}
+                        />
+                      </div>
+                      <span className="field-hint">Your role or position on campus</span>
+                    </div>
+                  )}
+
+                  {/* Phone (Staff Only — shown here) */}
+                  {accountType === 'staff' && (
+                    <div className="form-group">
+                      <label>Phone Number <span className="label-hint">(Optional)</span></label>
+                      <div className="input-wrapper">
+                        <FiPhone className="input-icon" />
+                        <input
+                          type="tel"
+                          placeholder="e.g., 9876543210"
+                          value={formData.phone}
+                          onChange={(e) => updateField('phone', e.target.value)}
+                          maxLength={10}
+                        />
+                      </div>
+                    </div>
+                  )}
 
                   {/* Password Field */}
                   <div className={`form-group ${errors.password ? 'error' : ''}`}>
@@ -381,14 +578,16 @@ export default function Signup() {
                     {errors.confirmPassword && <span className="error-text">{errors.confirmPassword}</span>}
                   </div>
 
-                  <button type="button" className="btn-auth-submit" onClick={handleNext1}>
-                    Continue to College Info →
+                  <button type="button" className="btn-auth-submit" onClick={handleNext1} disabled={otpLoading}>
+                    {otpLoading ? <span className="btn-spinner"></span> : (
+                      accountType === 'student' ? 'Continue to College Info →' : 'Verify Email →'
+                    )}
                   </button>
                 </motion.div>
               )}
 
-              {/* ===== STEP 2: College Information ===== */}
-              {step === 2 && (
+              {/* ===== STEP 2: College Information (student only) ===== */}
+              {step === 2 && accountType === 'student' && (
                 <motion.div
                   key="step2"
                   initial={{ opacity: 0, x: 20 }}
@@ -484,17 +683,17 @@ export default function Signup() {
                     <button type="button" className="btn-auth-back" onClick={() => setStep(1)}>
                       ← Back
                     </button>
-                    <button type="button" className="btn-auth-submit" onClick={handleNext2} disabled={otpLoading}>
+                    <button type="button" className="btn-auth-submit" onClick={handleNext2Student} disabled={otpLoading}>
                       {otpLoading ? <span className="btn-spinner"></span> : 'Verify Email →'}
                     </button>
                   </div>
                 </motion.div>
               )}
 
-              {/* ===== STEP 3: OTP Verification ===== */}
-              {step === 3 && (
+              {/* ===== OTP VERIFICATION STEP ===== */}
+              {isOtpStep && (
                 <motion.div
-                  key="step3"
+                  key="stepOtp"
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
@@ -535,7 +734,7 @@ export default function Signup() {
                     </div>
 
                     <div className="form-row">
-                      <button type="button" className="btn-auth-back" onClick={() => setStep(2)}>
+                      <button type="button" className="btn-auth-back" onClick={() => setStep(accountType === 'student' ? 2 : 1)}>
                         ← Back
                       </button>
                       <button type="submit" className="btn-auth-submit" disabled={loading || otp.join('').length !== 6}>

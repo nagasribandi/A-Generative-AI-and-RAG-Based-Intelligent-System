@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { FiHome, FiPlus, FiList, FiBarChart2, FiUser, FiLogOut, FiMenu, FiX, FiShield, FiCpu, FiMap, FiAward, FiSun, FiMoon, FiSettings } from 'react-icons/fi';
+import { FiHome, FiPlus, FiList, FiBarChart2, FiUser, FiLogOut, FiMenu, FiX, FiShield, FiCpu, FiMap, FiAward, FiSun, FiMoon, FiSettings, FiBriefcase } from 'react-icons/fi';
 import AIChatbot from './AIChatbot';
 import '../styles/layout.css';
 
@@ -26,6 +26,7 @@ export default function Layout({ children }) {
     { to: '/leaderboard', icon: <FiAward />, label: 'Leaderboard' },
     ...(user?.role === 'admin' ? [{ to: '/analytics', icon: <FiBarChart2 />, label: 'Analytics' }] : []),
     ...(user?.role === 'admin' ? [{ to: '/admin', icon: <FiSettings />, label: 'Admin Panel' }] : []),
+    ...(user?.role === 'admin' ? [{ to: '/dept-admins', icon: <FiBriefcase />, label: 'Dept Admins' }] : []),
     { to: '/profile', icon: <FiUser />, label: 'Profile' }
   ];
 
@@ -93,7 +94,7 @@ export default function Layout({ children }) {
               {theme === 'dark' ? <FiSun /> : <FiMoon />}
             </button>
             <span className="topbar-role-badge">
-              {user?.role === 'admin' ? '🛡️ Admin' : '🎓 Student'}
+              {user?.role === 'admin' ? '🛡️ Admin' : user?.role === 'staff' ? '🏢 Staff' : '🎓 Student'}
             </span>
           </div>
         </header>

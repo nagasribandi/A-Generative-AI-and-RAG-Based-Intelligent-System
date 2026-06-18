@@ -718,3 +718,166 @@
   font-weight: 600;
   margin-top: 0.5rem;
 }
+
+/* ===== ACCOUNT TYPE SELECTION ===== */
+.account-type-select-container {
+  grid-template-columns: 380px 560px;
+}
+
+.account-type-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.2rem;
+  margin: 1.5rem 0;
+}
+
+.account-type-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  background: #fff;
+  border: 2px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 1.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.account-type-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.account-type-card:hover {
+  border-color: #6366f1;
+  box-shadow: 0 8px 30px rgba(99, 102, 241, 0.15);
+}
+
+.account-type-card:hover::before {
+  opacity: 1;
+}
+
+.account-type-card.staff-card::before {
+  background: linear-gradient(90deg, #0ea5e9, #06b6d4);
+}
+
+.account-type-card.staff-card:hover {
+  border-color: #0ea5e9;
+  box-shadow: 0 8px 30px rgba(14, 165, 233, 0.15);
+}
+
+.atc-icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.8rem;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+}
+
+.atc-icon.student-icon {
+  background: #eef2ff;
+}
+
+.atc-icon.staff-icon {
+  background: #e0f2fe;
+}
+
+.account-type-card h3 {
+  font-size: 1.05rem;
+  color: #1e293b;
+  margin: 0 0 0.4rem;
+  font-weight: 700;
+}
+
+.account-type-card > p {
+  font-size: 0.82rem;
+  color: #64748b;
+  margin: 0 0 0.8rem;
+  line-height: 1.4;
+}
+
+.atc-features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.atc-features li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: #475569;
+}
+
+.atc-features li svg {
+  color: #22c55e;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.atc-btn {
+  display: inline-block;
+  padding: 8px 18px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.82rem;
+  margin-top: auto;
+  width: 100%;
+  text-align: center;
+}
+
+.atc-btn.staff-btn {
+  background: linear-gradient(135deg, #0ea5e9, #06b6d4);
+}
+
+.btn-change-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 1rem;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #c7d2fe;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-change-type:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+}
+
+@media (max-width: 860px) {
+  .account-type-select-container {
+    grid-template-columns: 1fr;
+    max-width: 480px;
+  }
+  .account-type-cards {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
+

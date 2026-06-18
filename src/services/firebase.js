@@ -181,4 +181,30 @@ export function onComplaintsChange(callback) {
   });
 }
 
+// ── Department Admins helpers ────────────────────────
+export const deptAdminsRef = ref(db, 'deptAdmins');
+
+export async function fbGetDeptAdmins() {
+  const snap = await get(deptAdminsRef);
+  if (!snap.exists()) return [];
+  const data = snap.val();
+  return Object.keys(data).map(key => ({ id: key, ...data[key] }));
+}
+
+export async function fbCreateDeptAdmin(adminData) {
+  const newRef = push(deptAdminsRef);
+  const item = { ...adminData, id: newRef.key };
+  await set(newRef, item);
+  return item;
+}
+
+export async function fbUpdateDeptAdmin(id, updates) {
+  await update(ref(db, `deptAdmins/${id}`), updates);
+}
+
+export async function fbDeleteDeptAdmin(id) {
+  await remove(ref(db, `deptAdmins/${id}`));
+}
+
 export { db, ref, get, set, push, update, remove, onValue };
+

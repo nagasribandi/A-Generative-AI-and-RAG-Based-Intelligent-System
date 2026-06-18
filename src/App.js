@@ -18,6 +18,7 @@ import Leaderboard from './pages/Leaderboard';
 import LandingPage from './pages/LandingPage';
 import Layout from './components/Layout';
 import AdminPanel from './pages/AdminPanel';
+import DepartmentAdmins from './pages/DepartmentAdmins';
 
 function ProtectedRoute({ children, adminOnly = false }) {
   const { user, loading } = useAuth();
@@ -65,6 +66,7 @@ function App() {
           <Route path="/complaint/:id" element={<ProtectedRoute><ComplaintDetail /></ProtectedRoute>} />
           <Route path="/analytics" element={<ProtectedRoute adminOnly><Analytics /></ProtectedRoute>} />
           <Route path="/admin" element={<ProtectedRoute adminOnly><AdminPanel /></ProtectedRoute>} />
+          <Route path="/dept-admins" element={<ProtectedRoute adminOnly><DepartmentAdmins /></ProtectedRoute>} />
           <Route path="/heatmap" element={<ProtectedRoute><Heatmap /></ProtectedRoute>} />
           <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
