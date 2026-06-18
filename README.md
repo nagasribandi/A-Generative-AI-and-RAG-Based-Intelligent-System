@@ -68,9 +68,9 @@ cd smart-campus-detection
 
 ## 🎓 Academic Information
 
--Department: Computer Science and Engineering
--Project Type: Mini Project
--Academic Year: 2025-26
+- Department: Computer Science and Engineering
+- Project Type: Mini Project
+- Academic Year: 2025-26
 
 
 
