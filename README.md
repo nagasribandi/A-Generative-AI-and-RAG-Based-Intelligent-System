@@ -1,6 +1,8 @@
-# 🎓 Smart Campus Problem Detection System
+#  Smart Campus Problem Detection System
 
-An AI-powered complaint management platform for educational institutions using **Generative AI** and **Retrieval-Augmented Generation (RAG)**.
+A Generative AI and Retrieval-Augmented Generation (RAG) Based Intelligent System is an AI-powered application that combines Large Language Models (LLMs) with a retrieval mechanism to provide accurate, context-aware, and up-to-date responses. Unlike traditional chatbots, the system retrieves relevant information from a knowledge base and uses it to generate meaningful answers.
+
+The project aims to improve response accuracy, reduce hallucinations, and provide users with reliable information based on stored documents
 
 ![React](https://img.shields.io/badge/React-18.2-blue) ![Chart.js](https://img.shields.io/badge/Chart.js-4.4-orange) ![AI](https://img.shields.io/badge/GenAI-Powered-purple)
 
@@ -36,7 +38,7 @@ An AI-powered complaint management platform for educational institutions using *
 - Only **Student** accounts can be created via signup
 - Admin accounts are managed by the institution
 
-## 🏃 Getting Started
+##  Getting Started
 
 ```bash
 # Clone the repository
@@ -49,28 +51,6 @@ npm install
 npm start
 ```
 
-## 📁 Project Structure
 
-```
-src/
-├── context/AuthContext.js      # Auth state + OTP verification
-├── services/
-│   ├── aiEngine.js             # AI Classification + RAG engine
-│   └── emailService.js         # EmailJS OTP + alert emails
-├── components/Layout.js        # Sidebar layout
-├── pages/
-│   ├── LandingPage.js          # Public landing
-│   ├── Login.js                # Login page
-│   ├── Signup.js               # OTP-verified multi-step signup
-│   ├── Dashboard.js            # Interactive dashboard
-│   ├── SubmitComplaint.js      # AI-powered complaint form
-│   ├── ManageComplaints.js     # Complaint management
-│   ├── ComplaintDetail.js      # Detail + AI analysis tabs
-│   ├── Analytics.js            # Admin analytics
-│   └── Profile.js              # User profile
-└── styles/                     # All CSS
-```
-
-## 📄 License
 
 MIT License - Built for Smart Campus ecosystems.
