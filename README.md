@@ -37,20 +37,43 @@ The project aims to improve response accuracy, reduce hallucinations, and provid
 - Name must match college ID card (as registered)
 - Only **Student** accounts can be created via signup
 - Admin accounts are managed by the institution
+## 📂 Complaint Categories
 
-##  Getting Started
+The AI system classifies complaints into:
 
-```bash
-# Clone the repository
-git clone https://github.com/YOUR_USERNAME/smart-campus-detection.git
+1. Electrical Issues
+2. Water Supply Problems
+3. Internet/WiFi Issues
+4. Classroom Maintenance
+5. Hostel Issues
+6. Transportation Problems
+7. Library Related Issues
+8. Cleanliness & Hygiene
+9. Security Concerns
+10. Other Campus Problems
 
-# Install dependencies
+## ⚙️ Installation
+
+1. Clone Repository
+git clone <repository-url>
+2. Navigate to Project
+cd smart-campus-detection
+3. Install Dependencies
 npm install
-
-# Start development server
+4. Start Application
 npm start
-```
+
+## 👨‍💻 Team Members
+
+- Bandi Nagasri
+- Pipavath Araveen
+- Baindla Sandeep
+
+## 🎓 Academic Information
+
+Department: Computer Science and Engineering
+Project Type: Mini Project
+Academic Year: 2025-26
 
 
 
-MIT License - Built for Smart Campus ecosystems.
