@@ -54,14 +54,11 @@ The AI system classifies complaints into:
 
 ## ⚙️ Installation
 
-1. Clone Repository
-git clone <repository-url>
+1. Clone Repository--git clone <repository-url>
 2. Navigate to Project
 cd smart-campus-detection
-3. Install Dependencies
-npm install
-4. Start Application
-npm start
+3. Install Dependencies--npm install
+5. Start Application--npm start
 
 ## 👨‍💻 Team Members
 
@@ -71,9 +68,9 @@ npm start
 
 ## 🎓 Academic Information
 
-Department: Computer Science and Engineering
-Project Type: Mini Project
-Academic Year: 2025-26
+-Department: Computer Science and Engineering
+-Project Type: Mini Project
+-Academic Year: 2025-26
 
 
 
